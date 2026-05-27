@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { ControlledTreeEnvironment, Tree } from "react-complex-tree";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import "react-complex-tree/lib/style-modern.css";
+import "github-markdown-css/github-markdown-dark.css";
 import {
   Menu,
   X,
   Folder,
   FileText,
-  ChevronRight,
   ChevronDown,
   Plus,
   Save,
@@ -13,7 +17,6 @@ import {
   Settings,
   FileCode,
   FileImage,
-  FileJson,
   FileTerminal,
   Search,
   RefreshCw,
@@ -113,11 +116,8 @@ export default function App() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
-  const [draggedFile, setDraggedFile] = useState(null);
-  const [dragOverFolder, setDragOverFolder] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedFolders, setExpandedFolders] = useState(new Set());
-  const [expandedGists, setExpandedGists] = useState(new Set());
   const [isPreview, setIsPreview] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
 
@@ -363,14 +363,11 @@ export default function App() {
     return [...targetFolders.slice(0, 2), displayName, extension].filter(Boolean).join(".");
   };
 
-  const handleMoveFileToFolder = async (targetFolderPath = "") => {
-    if (!draggedFile) return;
-    const { gist, filename } = draggedFile;
+  const handleMoveFileToFolder = async (targetFolderPath = "", fileToMove) => {
+    if (!fileToMove) return;
+    const { gist, filename } = fileToMove;
     const targetFolders = targetFolderPath ? targetFolderPath.split(".").filter(Boolean).slice(0, 2) : [];
     const nextFilename = composeFilename(filename, targetFolders);
-
-    setDragOverFolder(null);
-    setDraggedFile(null);
 
     if (!gist || !filename || nextFilename === filename) return;
 
@@ -426,6 +423,25 @@ export default function App() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const getDropFolderPath = (target, items) => {
+    if (!target) return "";
+    if (target.targetType === "root") return "";
+
+    const targetItemId = target.targetItem || target.parentItem;
+    const targetItem = targetItemId ? items[targetItemId] : null;
+    if (!targetItem) return "";
+
+    if (target.targetType === "item") {
+      return targetItem.data?.type === "folder" ? targetItem.data.folderPath : "";
+    }
+
+    if (target.targetType === "between-items") {
+      return targetItem.data?.type === "folder" ? targetItem.data.folderPath : "";
+    }
+
+    return "";
   };
 
   const handleDeleteGist = async (gistId) => {
@@ -495,7 +511,14 @@ export default function App() {
   };
 
   const buildTree = (gistsList) => {
-    const root = { name: "Root", isFolder: true, children: {}, gists: [] };
+    const items = {
+      root: {
+        index: "root",
+        isFolder: true,
+        children: [],
+        data: { type: "folder", title: "Root", folderPath: "" }
+      }
+    };
     const query = searchQuery.toLowerCase();
 
     gistsList.forEach(gist => {
@@ -506,29 +529,48 @@ export default function App() {
       if (!matchesSearch) return;
 
       const files = Object.keys(gist.files || {});
-      const primaryFile = files[0] || "Untitled";
-      const { folders, displayName } = parseDottedFilename(primaryFile);
-      let currentNode = root;
+      const targetFiles = files.length ? files : ["Untitled"];
 
-      for (const part of folders) {
-        if (!currentNode.children[part]) {
-          currentNode.children[part] = {
-            name: part,
-            isFolder: true,
-            children: {},
-            gists: []
-          };
+      targetFiles.forEach(filename => {
+        const { folders, displayName } = parseDottedFilename(filename);
+        let parentId = "root";
+        let folderPath = "";
+
+        for (const part of folders) {
+          folderPath = folderPath ? `${folderPath}.${part}` : part;
+          const folderId = `folder:${folderPath}`;
+          if (!items[folderId]) {
+            items[folderId] = {
+              index: folderId,
+              isFolder: true,
+              children: [],
+              data: { type: "folder", title: part, folderPath }
+            };
+          }
+          if (!items[parentId].children.includes(folderId)) {
+            items[parentId].children.push(folderId);
+          }
+          parentId = folderId;
         }
-        currentNode = currentNode.children[part];
-      }
 
-      currentNode.gists.push({
-        displayName,
-        gist,
-        filename: primaryFile
+        const fileId = `file:${gist.id}:${filename}`;
+        items[fileId] = {
+          index: fileId,
+          isFolder: false,
+          children: [],
+          data: {
+            type: "file",
+            title: displayName,
+            gist,
+            filename
+          }
+        };
+        if (!items[parentId].children.includes(fileId)) {
+          items[parentId].children.push(fileId);
+        }
       });
     });
-    return root;
+    return items;
   };
 
   const handleSelectGist = async (gist, filename) => {
@@ -767,163 +809,10 @@ export default function App() {
     setExpandedFolders(next);
   };
 
-  const toggleGistExpand = (gistId) => {
-    const next = new Set(expandedGists);
-    if (next.has(gistId)) next.delete(gistId);
-    else next.add(gistId);
-    setExpandedGists(next);
-  };
-
-  const renderTree = (node, path = "", depth = 0) => {
-    return (
-      <div key={path || "root"} className="select-none">
-        {Object.entries(node.children).map(([folderName, folderNode]) => {
-          const folderPath = path ? `${path}.${folderName}` : folderName;
-          const isExpanded = expandedFolders.has(folderPath);
-          return (
-            <div key={folderPath}>
-              <div
-                className={`flex items-center justify-between py-2 px-3 hover:bg-[#2a2d2e] cursor-pointer text-[#cccccc] font-medium text-xs transition-colors rounded ${
-                  dragOverFolder === folderPath ? "bg-[#2a2d2e] ring-1 ring-[#007acc]/70" : ""
-                }`}
-                style={{ paddingLeft: `${depth * 12 + 12}px` }}
-                onClick={() => toggleFolder(folderPath)}
-                onDragOver={(event) => {
-                  if (!draggedFile) return;
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setDragOverFolder(folderPath);
-                }}
-                onDragLeave={(event) => {
-                  event.stopPropagation();
-                  setDragOverFolder(null);
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  handleMoveFileToFolder(folderPath);
-                }}
-              >
-                <div className="flex items-center min-w-0">
-                  <span className="mr-1.5 text-gray-500">
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </span>
-                  <Folder size={14} className="mr-1.5 text-yellow-500/80" />
-                  <span className="truncate">{folderName}</span>
-                </div>
-              </div>
-              {isExpanded && renderTree(folderNode, folderPath, depth + 1)}
-            </div>
-          );
-        })}
-
-        {node.gists.map(({ displayName, gist, filename }) => {
-          const isSelected = activeGist?.id === gist.id && activeFile === filename;
-          const isGistExpanded = expandedGists.has(gist.id);
-          const files = Object.keys(gist.files || {});
-          const hasMultipleFiles = files.length > 1;
-          const { Icon: ItemIcon, className: itemIconClassName } = getFileIconMeta(filename);
-
-          return (
-            <div key={`${gist.id}:${filename}`}>
-              <div
-                draggable
-                className={`flex items-center justify-between py-2.5 px-3 cursor-pointer text-xs transition-colors rounded ${
-                  isSelected
-                    ? "bg-[#37373d] text-white font-medium border-l-2 border-[#007acc]"
-                    : "hover:bg-[#2a2d2e] text-[#b3b3b3]"
-                }`}
-                style={{ paddingLeft: `${depth * 12 + 12}px` }}
-                onClick={() => handleSelectGist(gist, filename)}
-                onDragStart={(event) => {
-                  event.dataTransfer.effectAllowed = "move";
-                  event.dataTransfer.setData("text/plain", filename);
-                  setDraggedFile({ gist, filename });
-                }}
-                onDragEnd={() => {
-                  setDraggedFile(null);
-                  setDragOverFolder(null);
-                }}
-              >
-                <div className="flex items-center min-w-0 flex-1">
-                  <ItemIcon size={14} className={`mr-1.5 flex-shrink-0 ${isSelected ? "text-[#007acc]" : itemIconClassName}`} />
-                  <span className="truncate">{displayName}</span>
-                </div>
-
-                {hasMultipleFiles && (
-                  <button
-                    className="p-1 hover:bg-[#3c3c3c] rounded text-gray-400 hover:text-white"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleGistExpand(gist.id);
-                    }}
-                  >
-                    {isGistExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                  </button>
-                )}
-              </div>
-
-              {isGistExpanded && (
-                <div className="bg-[#1e1e1f] py-1 border-l border-[#3c3c3c] ml-5">
-                  {files.map(filename => {
-                    const isFileSelected = isSelected && activeFile === filename;
-                    const { Icon: ChildIcon, className: childIconClassName } = getFileIconMeta(filename);
-                    return (
-                      <div
-                        key={filename}
-                        draggable
-                        className={`flex items-center py-2 pr-3 pl-6 text-[11px] cursor-pointer ${
-                          isFileSelected ? "text-white font-semibold bg-[#2a2d2e]" : "text-gray-500 hover:text-gray-300"
-                        }`}
-                        onClick={() => handleSelectGist(gist, filename)}
-                        onDragStart={(event) => {
-                          event.dataTransfer.effectAllowed = "move";
-                          event.dataTransfer.setData("text/plain", filename);
-                          setDraggedFile({ gist, filename });
-                        }}
-                        onDragEnd={() => {
-                          setDraggedFile(null);
-                          setDragOverFolder(null);
-                        }}
-                      >
-                        <ChildIcon size={11} className={`mr-1.5 flex-shrink-0 ${isFileSelected ? "text-[#007acc]" : childIconClassName}`} />
-                        <span className="truncate">{filename}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const parseMarkdown = (markdownText) => {
-    if (!markdownText) return { __html: '<p class="text-gray-500 italic">無內容...</p>' };
-
-    let html = markdownText
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-    html = html.replace(/^# (.*?)$/gm, '<h1 class="text-2xl font-bold text-white border-b border-[#3c3c3c] pb-2 mt-4 mb-2">$1</h1>');
-    html = html.replace(/^## (.*?)$/gm, '<h2 class="text-xl font-bold text-white border-b border-[#3c3c3c]/50 pb-1 mt-4 mb-2">$1</h2>');
-    html = html.replace(/^### (.*?)$/gm, '<h3 class="text-lg font-bold text-white mt-3 mb-1.5">$1</h3>');
-    html = html.replace(/^#### (.*?)$/gm, '<h4 class="text-base font-bold text-gray-200 mt-2 mb-1">$1</h4>');
-    html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-[#1a1a1a] p-3 rounded-lg border border-[#3c3c3c] font-mono text-xs overflow-x-auto my-3 text-gray-300">$1</pre>');
-    html = html.replace(/`([^`]+)`/g, '<code class="bg-[#2d3139] px-1.5 py-0.5 rounded text-xs font-mono text-amber-400">$1</code>');
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
-    html = html.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
-    html = html.replace(/^\s*[-*+]\s+(.*?)$/gm, '<li class="list-disc ml-5 my-1 text-gray-300">$1</li>');
-    html = html.replace(/^\s*\d+\.\s+(.*?)$/gm, '<li class="list-decimal ml-5 my-1 text-gray-300">$1</li>');
-    html = html.replace(/\n/g, "<br />");
-
-    return { __html: html };
-  };
-
-  const treeData = buildTree(gists);
+  const treeItems = useMemo(() => buildTree(gists), [gists, searchQuery]);
+  const selectedTreeItems = activeGist && activeFile ? [`file:${activeGist.id}:${activeFile}`] : [];
+  const expandedTreeItems = Array.from(expandedFolders).map(folderPath => `folder:${folderPath}`);
+  const hasTreeItems = treeItems.root.children.length > 0;
   const charCount = editorContent ? editorContent.length : 0;
   const wordCount = editorContent ? editorContent.trim().split(/\s+/).filter(Boolean).length : 0;
   const metadataDirty = Boolean(activeGist) && (
@@ -967,30 +856,86 @@ export default function App() {
           </div>
         </div>
 
-        <div
-          className={`flex-1 overflow-y-auto px-2 py-3 space-y-1 custom-scrollbar ${
-            dragOverFolder === "" ? "bg-[#202020]" : ""
-          }`}
-          onDragOver={(event) => {
-            if (!draggedFile) return;
-            event.preventDefault();
-            setDragOverFolder("");
-          }}
-          onDragLeave={() => setDragOverFolder(null)}
-          onDrop={(event) => {
-            event.preventDefault();
-            handleMoveFileToFolder("");
-          }}
-        >
+        <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
           {loading && gists.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 space-y-3">
               <RefreshCw className="animate-spin text-[#007acc]" size={20} />
               <span className="text-xs text-gray-500">正在與 GitHub 進行數據同步...</span>
             </div>
-          ) : Object.keys(treeData.children).length === 0 && treeData.gists.length === 0 ? (
+          ) : !hasTreeItems ? (
             <div className="text-center py-10 text-xs text-gray-600">無符合篩選條件的項目</div>
           ) : (
-            renderTree(treeData)
+            <ControlledTreeEnvironment
+              items={treeItems}
+              getItemTitle={(item) => item.data.title}
+              viewState={{
+                "gist-tree": {
+                  expandedItems: expandedTreeItems,
+                  selectedItems: selectedTreeItems
+                }
+              }}
+              canDragAndDrop
+              canDropOnFolder
+              canReorderItems={false}
+              disableMultiselect
+              defaultInteractionMode="click-item-to-expand"
+              onExpandItem={(item) => {
+                if (item.data?.folderPath) {
+                  setExpandedFolders(prev => new Set(prev).add(item.data.folderPath));
+                }
+              }}
+              onCollapseItem={(item) => {
+                if (item.data?.folderPath) {
+                  setExpandedFolders(prev => {
+                    const next = new Set(prev);
+                    next.delete(item.data.folderPath);
+                    return next;
+                  });
+                }
+              }}
+              onPrimaryAction={(item) => {
+                if (item.data?.type === "file") {
+                  handleSelectGist(item.data.gist, item.data.filename);
+                }
+              }}
+              canDrag={(items) => items.every(item => item.data?.type === "file")}
+              canDropAt={(items, target) => {
+                if (!items.every(item => item.data?.type === "file")) return false;
+                if (target.targetType === "root") return true;
+                if (target.targetType === "item") {
+                  return treeItems[target.targetItem]?.data?.type === "folder";
+                }
+                if (target.targetType === "between-items") {
+                  return target.parentItem === "root" || treeItems[target.parentItem]?.data?.type === "folder";
+                }
+                return false;
+              }}
+              onDrop={(items, target) => {
+                const fileItem = items.find(item => item.data?.type === "file");
+                if (!fileItem) return;
+                handleMoveFileToFolder(getDropFolderPath(target, treeItems), fileItem.data);
+              }}
+              renderItemTitle={({ item, context }) => {
+                if (item.data?.type === "folder") {
+                  return (
+                    <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-[#cccccc]">
+                      <Folder size={14} className="flex-shrink-0 text-yellow-500/80" />
+                      <span className="truncate">{item.data.title}</span>
+                    </span>
+                  );
+                }
+
+                const { Icon: ItemIcon, className: itemIconClassName } = getFileIconMeta(item.data?.filename);
+                return (
+                  <span className={`flex min-w-0 items-center gap-1.5 text-xs ${context.isSelected ? "font-semibold text-white" : "text-[#b3b3b3]"}`}>
+                    <ItemIcon size={14} className={`flex-shrink-0 ${context.isSelected ? "text-[#007acc]" : itemIconClassName}`} />
+                    <span className="truncate">{item.data.title}</span>
+                  </span>
+                );
+              }}
+            >
+              <Tree treeId="gist-tree" rootItem="root" treeLabel="Gist files" />
+            </ControlledTreeEnvironment>
           )}
         </div>
 
@@ -1178,8 +1123,14 @@ export default function App() {
               </button>
             </div>
           ) : isPreview ? (
-            <div className="flex-1 overflow-y-auto px-6 py-6 prose prose-invert bg-[#1e1e1e] max-w-full custom-scrollbar selection:bg-[#007acc]/30">
-              <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={parseMarkdown(editorContent)} />
+            <div className="flex-1 overflow-y-auto bg-[#1e1e1e] custom-scrollbar selection:bg-[#007acc]/30">
+              <article className="markdown-body max-w-none px-6 py-6">
+                {editorContent.trim() ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{editorContent}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-500 italic">無內容...</p>
+                )}
+              </article>
             </div>
           ) : (
             <div className="flex-1 flex min-h-0 relative">
