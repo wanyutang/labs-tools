@@ -911,7 +911,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
+        <div className="rct-dark flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
           {loading && gists.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 space-y-3">
               <RefreshCw className="animate-spin text-[#007acc]" size={20} />
