@@ -386,9 +386,7 @@ export default function App() {
         return { ...item, files };
       }));
 
-      if (activeGist?.id === gist.id && activeFile === filename) {
-        setActiveFile(nextFilename);
-        setDraftFilename(nextFilename);
+      if (activeGist?.id === gist.id) {
         setActiveGist(prev => {
           const files = { ...prev.files };
           delete files[filename];
@@ -398,6 +396,10 @@ export default function App() {
           };
           return { ...prev, files };
         });
+        if (activeFile === filename) {
+          setActiveFile(nextFilename);
+          setDraftFilename(nextFilename);
+        }
       }
 
       if (targetFolderPath) {
@@ -959,9 +961,9 @@ export default function App() {
                   handleSelectGist(item.data.gist, item.data.filename);
                 }
               }}
-              canDrag={(items) => items.every(item => item.data?.type === "file")}
+              canDrag={(items) => items.every(item => item.data?.type === "file" || item.data?.type === "fileGroup")}
               canDropAt={(items, target) => {
-                if (!items.every(item => item.data?.type === "file")) return false;
+                if (!items.every(item => item.data?.type === "file" || item.data?.type === "fileGroup")) return false;
                 if (target.targetType === "root") return true;
                 if (target.targetType === "item") {
                   return treeItems[target.targetItem]?.data?.type === "folder";
@@ -972,7 +974,7 @@ export default function App() {
                 return false;
               }}
               onDrop={(items, target) => {
-                const fileItem = items.find(item => item.data?.type === "file");
+                const fileItem = items.find(item => item.data?.type === "file" || item.data?.type === "fileGroup");
                 if (!fileItem) return;
                 handleMoveFileToFolder(getDropFolderPath(target, treeItems), fileItem.data);
               }}
