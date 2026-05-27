@@ -108,3 +108,10 @@ body {
   background-color: #202f3a;
   outline: 1px solid rgba(0, 122, 204, 0.7);
 }
+
+.vscode-file-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  object-fit: contain;
+}

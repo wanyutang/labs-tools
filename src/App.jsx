@@ -2,13 +2,12 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { ControlledTreeEnvironment, Tree } from "react-complex-tree";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { getIconForFile, getIconForFolder, getIconForOpenFolder } from "vscode-icons-js";
 import "react-complex-tree/lib/style-modern.css";
 import "github-markdown-css/github-markdown-dark.css";
 import {
   Menu,
   X,
-  Folder,
-  FileText,
   ChevronDown,
   Plus,
   Save,
@@ -16,8 +15,6 @@ import {
   Eye,
   Settings,
   FileCode,
-  FileImage,
-  FileTerminal,
   Search,
   RefreshCw,
   Lock,
@@ -28,12 +25,7 @@ import {
   FileEdit,
   Send,
   Check,
-  ExternalLink,
-  BookOpenText,
-  Braces,
-  Database,
-  NotebookText,
-  Table2
+  ExternalLink
 } from "lucide-react";
 
 const extensionPattern = /\.(md|markdown|txt|js|css|scss|less|html|htm|json|py|java|kt|go|rs|c|cpp|cs|php|rb|ipynb|sh|bash|zsh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|tsv|xlsx|xls|sql|toml|ini|env|pdf|doc|docx)$/i;
@@ -43,39 +35,18 @@ const getExtension = (filename = "") => {
   return match ? match[1] : "";
 };
 
-const getFileIconMeta = (filename) => {
-  const ext = getExtension(filename);
+const VSCODE_ICON_BASE_URL = "https://raw.githubusercontent.com/vscode-icons/vscode-icons/master/icons/";
 
-  if (["md", "markdown", "txt"].includes(ext)) {
-    return { Icon: BookOpenText, className: "text-[#4ea1ff]" };
-  }
-  if (["js", "jsx", "ts", "tsx", "vue", "svelte", "html", "htm", "css", "scss", "less", "java", "kt", "go", "rs", "c", "cpp", "cs", "php", "rb"].includes(ext)) {
-    return { Icon: FileCode, className: "text-[#dcdcaa]" };
-  }
-  if (["json", "yml", "yaml", "toml", "xml", "ini", "env"].includes(ext)) {
-    return { Icon: Braces, className: "text-[#ce9178]" };
-  }
-  if (["py", "ipynb"].includes(ext)) {
-    return { Icon: ext === "ipynb" ? NotebookText : FileCode, className: "text-[#c586c0]" };
-  }
-  if (["sh", "bash", "zsh"].includes(ext)) {
-    return { Icon: FileTerminal, className: "text-[#89d185]" };
-  }
-  if (["csv", "tsv", "xlsx", "xls"].includes(ext)) {
-    return { Icon: Table2, className: "text-[#89d185]" };
-  }
-  if (["sql"].includes(ext)) {
-    return { Icon: Database, className: "text-[#4ec9b0]" };
-  }
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) {
-    return { Icon: FileImage, className: "text-[#d7ba7d]" };
-  }
-  if (["pdf", "doc", "docx"].includes(ext)) {
-    return { Icon: FileText, className: "text-[#b5cea8]" };
-  }
-
-  return { Icon: FileText, className: "text-gray-500" };
-};
+const VSCodeIcon = ({ iconName }) => (
+  <img
+    src={`${VSCODE_ICON_BASE_URL}${iconName || "default_file.svg"}`}
+    alt=""
+    aria-hidden="true"
+    className="vscode-file-icon"
+    draggable="false"
+    loading="lazy"
+  />
+);
 
 const parseDottedFilename = (filename) => {
   const rawName = filename || "Untitled";
@@ -1007,18 +978,21 @@ export default function App() {
               }}
               renderItemTitle={({ item, context }) => {
                 if (item.data?.type === "folder") {
+                  const folderIcon = context.isExpanded
+                    ? getIconForOpenFolder(item.data.title)
+                    : getIconForFolder(item.data.title);
                   return (
                     <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-[#cccccc]">
-                      <Folder size={14} className="flex-shrink-0 text-yellow-500/80" />
+                      <VSCodeIcon iconName={folderIcon} />
                       <span className="truncate">{item.data.title}</span>
                     </span>
                   );
                 }
 
-                const { Icon: ItemIcon, className: itemIconClassName } = getFileIconMeta(item.data?.filename);
+                const fileIcon = getIconForFile(item.data?.filename || "");
                 return (
                   <span className={`flex min-w-0 items-center gap-1.5 text-xs ${context.isSelected ? "font-semibold text-white" : "text-[#b3b3b3]"}`}>
-                    <ItemIcon size={14} className={`flex-shrink-0 ${context.isSelected ? "text-[#007acc]" : itemIconClassName}`} />
+                    <VSCodeIcon iconName={fileIcon} />
                     <span className="truncate">{item.data.title}</span>
                   </span>
                 );
