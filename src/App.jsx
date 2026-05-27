@@ -12,6 +12,9 @@ import {
   Eye,
   Settings,
   FileCode,
+  FileImage,
+  FileJson,
+  FileTerminal,
   Search,
   RefreshCw,
   Lock,
@@ -22,10 +25,54 @@ import {
   FileEdit,
   Send,
   Check,
-  ExternalLink
+  ExternalLink,
+  BookOpenText,
+  Braces,
+  Database,
+  NotebookText,
+  Table2
 } from "lucide-react";
 
-const extensionPattern = /\.(md|markdown|txt|js|css|html|htm|json|py|ipynb|sh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|toml|ini|env)$/i;
+const extensionPattern = /\.(md|markdown|txt|js|css|scss|less|html|htm|json|py|ipynb|sh|bash|zsh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|tsv|xlsx|xls|sql|toml|ini|env|pdf|doc|docx)$/i;
+
+const getExtension = (filename = "") => {
+  const match = filename.toLowerCase().match(/\.([^.]+)$/);
+  return match ? match[1] : "";
+};
+
+const getFileIconMeta = (filename) => {
+  const ext = getExtension(filename);
+
+  if (["md", "markdown", "txt"].includes(ext)) {
+    return { Icon: BookOpenText, className: "text-[#4ea1ff]" };
+  }
+  if (["js", "jsx", "ts", "tsx", "vue", "svelte", "html", "htm", "css", "scss", "less"].includes(ext)) {
+    return { Icon: FileCode, className: "text-[#dcdcaa]" };
+  }
+  if (["json", "yml", "yaml", "toml", "xml", "ini", "env"].includes(ext)) {
+    return { Icon: Braces, className: "text-[#ce9178]" };
+  }
+  if (["py", "ipynb"].includes(ext)) {
+    return { Icon: ext === "ipynb" ? NotebookText : FileCode, className: "text-[#c586c0]" };
+  }
+  if (["sh", "bash", "zsh"].includes(ext)) {
+    return { Icon: FileTerminal, className: "text-[#89d185]" };
+  }
+  if (["csv", "tsv", "xlsx", "xls"].includes(ext)) {
+    return { Icon: Table2, className: "text-[#89d185]" };
+  }
+  if (["sql"].includes(ext)) {
+    return { Icon: Database, className: "text-[#4ec9b0]" };
+  }
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) {
+    return { Icon: FileImage, className: "text-[#d7ba7d]" };
+  }
+  if (["pdf", "doc", "docx"].includes(ext)) {
+    return { Icon: FileText, className: "text-[#b5cea8]" };
+  }
+
+  return { Icon: FileText, className: "text-gray-500" };
+};
 
 export default function App() {
   const [token, setToken] = useState("");
@@ -675,6 +722,7 @@ export default function App() {
           const isGistExpanded = expandedGists.has(gist.id);
           const files = Object.keys(gist.files || {});
           const hasMultipleFiles = files.length > 1;
+          const { Icon: ItemIcon, className: itemIconClassName } = getFileIconMeta(filename);
 
           return (
             <div key={`${gist.id}:${filename}`}>
@@ -688,7 +736,7 @@ export default function App() {
                 onClick={() => handleSelectGist(gist, filename)}
               >
                 <div className="flex items-center min-w-0 flex-1">
-                  <FileText size={14} className={`mr-1.5 flex-shrink-0 ${isSelected ? "text-[#007acc]" : "text-gray-500"}`} />
+                  <ItemIcon size={14} className={`mr-1.5 flex-shrink-0 ${isSelected ? "text-[#007acc]" : itemIconClassName}`} />
                   <span className="truncate">{displayName}</span>
                 </div>
 
@@ -709,6 +757,7 @@ export default function App() {
                 <div className="bg-[#1e1e1f] py-1 border-l border-[#3c3c3c] ml-5">
                   {files.map(filename => {
                     const isFileSelected = isSelected && activeFile === filename;
+                    const { Icon: ChildIcon, className: childIconClassName } = getFileIconMeta(filename);
                     return (
                       <div
                         key={filename}
@@ -717,7 +766,7 @@ export default function App() {
                         }`}
                         onClick={() => handleSelectGist(gist, filename)}
                       >
-                        <FileCode size={11} className="mr-1.5" />
+                        <ChildIcon size={11} className={`mr-1.5 flex-shrink-0 ${isFileSelected ? "text-[#007acc]" : childIconClassName}`} />
                         <span className="truncate">{filename}</span>
                       </div>
                     );
