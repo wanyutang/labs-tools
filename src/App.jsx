@@ -80,11 +80,13 @@ const parseDottedFilename = (filename) => {
   const hasExtension = parts.length >= 2;
   const extension = hasExtension ? parts.at(-1) : "";
   const displayName = hasExtension ? parts.at(-2) : (parts[0] || rawName);
-  const folders = hasExtension ? parts.slice(0, -2) : [];
+  const groupParts = hasExtension ? parts.slice(0, -2) : [];
+  const folders = groupParts.slice(0, 2);
 
   return {
     cleanPath: hasExtension ? [...folders, displayName].join(".") : displayName,
     extension,
+    groupParts,
     folders,
     displayName
   };
