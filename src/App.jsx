@@ -957,7 +957,9 @@ export default function App() {
                 }
               }}
               onPrimaryAction={(item) => {
-                if (item.data?.type === "file" || item.data?.type === "fileGroup") {
+                if (item.data?.type === "folder" && item.data.folderPath) {
+                  toggleFolder(item.data.folderPath);
+                } else if (item.data?.type === "file" || item.data?.type === "fileGroup") {
                   handleSelectGist(item.data.gist, item.data.filename);
                 }
               }}
