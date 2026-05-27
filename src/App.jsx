@@ -74,6 +74,16 @@ const getFileIconMeta = (filename) => {
   return { Icon: FileText, className: "text-gray-500" };
 };
 
+const parseDottedFilename = (filename) => {
+  const cleanPath = (filename || "Untitled").replace(extensionPattern, "");
+  const parts = cleanPath.split(".").filter(Boolean);
+  return {
+    cleanPath,
+    folders: parts.slice(0, -1),
+    displayName: parts.at(-1) || cleanPath || "Untitled"
+  };
+};
+
 export default function App() {
   const [token, setToken] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
@@ -404,10 +414,6 @@ export default function App() {
     }
   };
 
-  const getFilePath = (filename) => {
-    return (filename || "Untitled").replace(extensionPattern, "");
-  };
-
   const buildTree = (gistsList) => {
     const root = { name: "Root", isFolder: true, children: {}, gists: [] };
     const query = searchQuery.toLowerCase();
@@ -421,12 +427,10 @@ export default function App() {
 
       const files = Object.keys(gist.files || {});
       const primaryFile = files[0] || "Untitled";
-      const pathStr = getFilePath(primaryFile);
-      const parts = pathStr.split(".").filter(Boolean);
+      const { folders, displayName } = parseDottedFilename(primaryFile);
       let currentNode = root;
 
-      for (let i = 0; i < parts.length - 1; i++) {
-        const part = parts[i];
+      for (const part of folders) {
         if (!currentNode.children[part]) {
           currentNode.children[part] = {
             name: part,
@@ -438,9 +442,8 @@ export default function App() {
         currentNode = currentNode.children[part];
       }
 
-      const lastPart = parts[parts.length - 1] || "Untitled";
       currentNode.gists.push({
-        displayName: lastPart,
+        displayName,
         gist,
         filename: primaryFile
       });
@@ -1019,7 +1022,7 @@ export default function App() {
               </div>
             </div>
             <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500">
-              <span className="truncate">{getFilePath(activeFile).replace(/\./g, " / ")}</span>
+              <span className="truncate">{parseDottedFilename(activeFile).cleanPath.replace(/\./g, " / ")}</span>
             </div>
           </div>
         )}
