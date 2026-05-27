@@ -21,7 +21,8 @@ import {
   Wand2,
   FileEdit,
   Send,
-  Check
+  Check,
+  ExternalLink
 } from "lucide-react";
 
 const extensionPattern = /\.(md|markdown|txt|js|css|html|htm|json|py|sh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|toml|ini|env)$/i;
@@ -41,6 +42,9 @@ export default function App() {
   const [activeFile, setActiveFile] = useState("");
   const [editorContent, setEditorContent] = useState("");
   const [originalContent, setOriginalContent] = useState("");
+  const [metadataOpen, setMetadataOpen] = useState(false);
+  const [draftFilename, setDraftFilename] = useState("");
+  const [draftDescription, setDraftDescription] = useState("");
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
@@ -204,6 +208,89 @@ export default function App() {
     }
   };
 
+  const openGistInNewWindow = (event) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!activeGist?.html_url) return;
+    window.open(activeGist.html_url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleSaveGistMetadata = async () => {
+    if (!activeGist || !activeFile) return;
+
+    const nextFilename = draftFilename.trim();
+    const nextDescription = draftDescription.trim();
+    if (!nextFilename) {
+      showToast("檔名不能留空。", "error");
+      return;
+    }
+
+    const filenameChanged = nextFilename !== activeFile;
+    const descriptionChanged = nextDescription !== (activeGist.description || "");
+    if (!filenameChanged && !descriptionChanged) {
+      setMetadataOpen(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const filesPayload = filenameChanged ? {
+        [activeFile]: {
+          filename: nextFilename
+        }
+      } : undefined;
+
+      await fetchWithRetry(`https://api.github.com/gists/${activeGist.id}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        body: JSON.stringify({
+          description: nextDescription,
+          ...(filesPayload ? { files: filesPayload } : {})
+        })
+      });
+
+      setGists(prevGists => prevGists.map(gist => {
+        if (gist.id !== activeGist.id) return gist;
+        const files = { ...gist.files };
+        if (filenameChanged) {
+          delete files[activeFile];
+          files[nextFilename] = {
+            ...(gist.files[activeFile] || {}),
+            filename: nextFilename
+          };
+        }
+        return { ...gist, description: nextDescription, files };
+      }));
+
+      setActiveGist(prev => {
+        const files = { ...prev.files };
+        if (filenameChanged) {
+          delete files[activeFile];
+          files[nextFilename] = {
+            ...(prev.files[activeFile] || {}),
+            filename: nextFilename
+          };
+        }
+        return { ...prev, description: nextDescription, files };
+      });
+      if (filenameChanged) {
+        setActiveFile(nextFilename);
+      }
+      setMetadataOpen(false);
+      showToast("檔案資訊已更新。", "success");
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "檔案資訊更新失敗。", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDeleteGist = async (gistId) => {
     if (!window.confirm("確定要永久刪除此 Gist 嗎？此動作無法復原。")) return;
     try {
@@ -222,6 +309,9 @@ export default function App() {
         setActiveFile("");
         setEditorContent("");
         setOriginalContent("");
+        setDraftFilename("");
+        setDraftDescription("");
+        setMetadataOpen(false);
       }
     } catch (err) {
       console.error(err);
@@ -324,6 +414,9 @@ export default function App() {
 
     setActiveGist(gist);
     setActiveFile(filename);
+    setDraftFilename(filename);
+    setDraftDescription(gist.description || "");
+    setMetadataOpen(false);
     setSidebarOpen(false);
 
     const fileObj = gist.files[filename];
@@ -470,6 +563,8 @@ export default function App() {
       });
       setGists(updatedGists);
       setActiveFile(suggestedFilename);
+      setDraftFilename(suggestedFilename);
+      setDraftDescription(suggestedFilename);
       setActiveGist(prev => {
         const files = { ...prev.files };
         delete files[activeFile];
@@ -666,6 +761,10 @@ export default function App() {
   const treeData = buildTree(gists);
   const charCount = editorContent ? editorContent.length : 0;
   const wordCount = editorContent ? editorContent.trim().split(/\s+/).filter(Boolean).length : 0;
+  const metadataDirty = Boolean(activeGist) && (
+    draftFilename.trim() !== activeFile ||
+    draftDescription.trim() !== (activeGist.description || "")
+  );
 
   return (
     <div className="safe-screen flex w-full bg-[#1e1e1e] text-[#d4d4d4] font-sans overflow-hidden select-none">
@@ -755,27 +854,21 @@ export default function App() {
 
             <div className="min-w-0 flex flex-col justify-center">
               {activeGist ? (
-                <>
-                  <div className="flex items-center space-x-1.5">
-                    {activeGist.public ? (
-                      <Globe size={11} className="text-[#007acc]" />
-                    ) : (
-                      <Lock size={11} className="text-amber-500" />
-                    )}
-                    <span className="text-xs text-gray-500 truncate max-w-[150px] sm:max-w-none">
-                      {getGistPath(activeGist).replace(/\./g, " / ")}
-                    </span>
-                  </div>
-                  <a
-                    href={activeGist.html_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-semibold text-white truncate max-w-[180px] sm:max-w-none hover:text-[#4ea1ff] focus:text-[#4ea1ff] outline-none"
-                    title="在 GitHub Gist 開啟"
-                  >
+                <button
+                  onClick={() => setMetadataOpen(value => !value)}
+                  className="min-w-0 flex items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-[#2d2d2d] transition-colors"
+                  title="展開檔案資訊"
+                >
+                  {activeGist.public ? (
+                    <Globe size={12} className="text-[#007acc] flex-shrink-0" />
+                  ) : (
+                    <Lock size={12} className="text-amber-500 flex-shrink-0" />
+                  )}
+                  <span className="text-sm font-semibold text-white truncate max-w-[190px] sm:max-w-[300px] md:max-w-[420px]">
                     {activeFile}
-                  </a>
-                </>
+                  </span>
+                  <ChevronDown size={14} className={`text-gray-500 flex-shrink-0 transition-transform ${metadataOpen ? "rotate-180" : ""}`} />
+                </button>
               ) : (
                 <span className="text-sm text-gray-500 font-medium">尚未選取任何檔案</span>
               )}
@@ -834,6 +927,57 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {activeGist && metadataOpen && (
+          <div className="border-b border-[#3c3c3c] bg-[#181818] px-3 py-3 md:px-5">
+            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+              <label className="min-w-0 space-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Filename</span>
+                <input
+                  value={draftFilename}
+                  onChange={(event) => setDraftFilename(event.target.value)}
+                  className="w-full bg-[#1e1e1e] border border-[#3c3c3c] focus:border-[#007acc] text-xs text-white rounded px-3 py-2 outline-none font-mono"
+                />
+              </label>
+
+              <label className="min-w-0 space-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Description</span>
+                <input
+                  value={draftDescription}
+                  onChange={(event) => setDraftDescription(event.target.value)}
+                  className="w-full bg-[#1e1e1e] border border-[#3c3c3c] focus:border-[#007acc] text-xs text-white rounded px-3 py-2 outline-none"
+                  placeholder="Gist description"
+                />
+              </label>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={openGistInNewWindow}
+                  className="flex items-center gap-1.5 bg-[#252526] hover:bg-[#2d2d2d] text-[#4ea1ff] border border-[#3c3c3c] rounded px-3 py-2 text-xs font-semibold transition-colors"
+                  title="用新視窗開啟 GitHub Gist"
+                >
+                  <ExternalLink size={13} />
+                  <span>GitHub</span>
+                </button>
+                <button
+                  onClick={handleSaveGistMetadata}
+                  disabled={saving || !metadataDirty}
+                  className={`flex items-center gap-1.5 rounded px-3 py-2 text-xs font-semibold transition-colors ${
+                    metadataDirty
+                      ? "bg-[#007acc] text-white hover:bg-[#0062a3]"
+                      : "bg-[#2d2d2d] text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  <Check size={13} />
+                  <span>更新</span>
+                </button>
+              </div>
+            </div>
+            <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500">
+              <span className="truncate">{getGistPath(activeGist).replace(/\./g, " / ")}</span>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 relative flex flex-col min-h-0 bg-[#1e1e1e]">
           {!activeGist ? (
