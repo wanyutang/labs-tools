@@ -931,7 +931,7 @@ export default function App() {
               canDropOnFolder
               canReorderItems={false}
               disableMultiselect
-              defaultInteractionMode="click-item-to-expand"
+              defaultInteractionMode="click-arrow-to-expand"
               onExpandItem={(item) => {
                 if (item.data?.type === "fileGroup") {
                   setExpandedFileGroups(prev => new Set(prev).add(item.index));
