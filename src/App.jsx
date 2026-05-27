@@ -97,17 +97,8 @@ const parseDottedFilename = (filename) => {
 
 const getPrimaryFilename = (gist) => {
   const files = Object.keys(gist?.files || {});
-  if (files.length <= 1) return files[0] || "Untitled";
-
-  return (
-    files.find(filename => {
-      const ext = getExtension(filename);
-      return ["md", "markdown"].includes(ext) && parseDottedFilename(filename).groupParts.length > 0;
-    }) ||
-    files.find(filename => ["md", "markdown"].includes(getExtension(filename))) ||
-    files[0] ||
-    "Untitled"
-  );
+  if (!files.length) return "Untitled";
+  return [...files].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }))[0];
 };
 
 const getTreeItemIdForFile = (gist, filename) => {
