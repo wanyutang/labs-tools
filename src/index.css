@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.safe-screen {
+  height: 100vh;
+  height: 100dvh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+.safe-fixed-y {
+  top: 0;
+  bottom: 0;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+.safe-modal {
+  padding-top: calc(1rem + var(--safe-top));
+  padding-bottom: calc(1rem + var(--safe-bottom));
+}
+
+.safe-toast {
+  bottom: calc(3.5rem + var(--safe-bottom));
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4d4d4d transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4d4d4d;
+  border-radius: 999px;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
