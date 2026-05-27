@@ -959,7 +959,15 @@ export default function App() {
               onPrimaryAction={(item) => {
                 if (item.data?.type === "folder" && item.data.folderPath) {
                   toggleFolder(item.data.folderPath);
-                } else if (item.data?.type === "file" || item.data?.type === "fileGroup") {
+                } else if (item.data?.type === "fileGroup") {
+                  setExpandedFileGroups(prev => {
+                    const next = new Set(prev);
+                    if (next.has(item.index)) next.delete(item.index);
+                    else next.add(item.index);
+                    return next;
+                  });
+                  handleSelectGist(item.data.gist, item.data.filename);
+                } else if (item.data?.type === "file") {
                   handleSelectGist(item.data.gist, item.data.filename);
                 }
               }}
