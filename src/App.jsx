@@ -113,6 +113,8 @@ export default function App() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
+  const [draggedFile, setDraggedFile] = useState(null);
+  const [dragOverFolder, setDragOverFolder] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [expandedGists, setExpandedGists] = useState(new Set());
@@ -351,6 +353,76 @@ export default function App() {
     } catch (err) {
       console.error(err);
       showToast(err.message || "檔案資訊更新失敗。", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const composeFilename = (filename, targetFolders = []) => {
+    const { displayName, extension } = parseDottedFilename(filename);
+    return [...targetFolders.slice(0, 2), displayName, extension].filter(Boolean).join(".");
+  };
+
+  const handleMoveFileToFolder = async (targetFolderPath = "") => {
+    if (!draggedFile) return;
+    const { gist, filename } = draggedFile;
+    const targetFolders = targetFolderPath ? targetFolderPath.split(".").filter(Boolean).slice(0, 2) : [];
+    const nextFilename = composeFilename(filename, targetFolders);
+
+    setDragOverFolder(null);
+    setDraggedFile(null);
+
+    if (!gist || !filename || nextFilename === filename) return;
+
+    setSaving(true);
+    try {
+      await fetchWithRetry(`https://api.github.com/gists/${gist.id}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        body: JSON.stringify({
+          files: {
+            [filename]: { filename: nextFilename }
+          }
+        })
+      });
+
+      setGists(prevGists => prevGists.map(item => {
+        if (item.id !== gist.id) return item;
+        const files = { ...item.files };
+        delete files[filename];
+        files[nextFilename] = {
+          ...(item.files[filename] || {}),
+          filename: nextFilename
+        };
+        return { ...item, files };
+      }));
+
+      if (activeGist?.id === gist.id && activeFile === filename) {
+        setActiveFile(nextFilename);
+        setDraftFilename(nextFilename);
+        setActiveGist(prev => {
+          const files = { ...prev.files };
+          delete files[filename];
+          files[nextFilename] = {
+            ...(prev.files[filename] || {}),
+            filename: nextFilename
+          };
+          return { ...prev, files };
+        });
+      }
+
+      if (targetFolderPath) {
+        setExpandedFolders(prev => new Set(prev).add(targetFolderPath));
+      }
+      showToast("已移動檔案並更新檔名。", "success");
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "移動檔案失敗。", "error");
     } finally {
       setSaving(false);
     }
@@ -711,9 +783,26 @@ export default function App() {
           return (
             <div key={folderPath}>
               <div
-                className="flex items-center justify-between py-2 px-3 hover:bg-[#2a2d2e] cursor-pointer text-[#cccccc] font-medium text-xs transition-colors rounded"
+                className={`flex items-center justify-between py-2 px-3 hover:bg-[#2a2d2e] cursor-pointer text-[#cccccc] font-medium text-xs transition-colors rounded ${
+                  dragOverFolder === folderPath ? "bg-[#2a2d2e] ring-1 ring-[#007acc]/70" : ""
+                }`}
                 style={{ paddingLeft: `${depth * 12 + 12}px` }}
                 onClick={() => toggleFolder(folderPath)}
+                onDragOver={(event) => {
+                  if (!draggedFile) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setDragOverFolder(folderPath);
+                }}
+                onDragLeave={(event) => {
+                  event.stopPropagation();
+                  setDragOverFolder(null);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleMoveFileToFolder(folderPath);
+                }}
               >
                 <div className="flex items-center min-w-0">
                   <span className="mr-1.5 text-gray-500">
@@ -738,6 +827,7 @@ export default function App() {
           return (
             <div key={`${gist.id}:${filename}`}>
               <div
+                draggable
                 className={`flex items-center justify-between py-2.5 px-3 cursor-pointer text-xs transition-colors rounded ${
                   isSelected
                     ? "bg-[#37373d] text-white font-medium border-l-2 border-[#007acc]"
@@ -745,6 +835,15 @@ export default function App() {
                 }`}
                 style={{ paddingLeft: `${depth * 12 + 12}px` }}
                 onClick={() => handleSelectGist(gist, filename)}
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", filename);
+                  setDraggedFile({ gist, filename });
+                }}
+                onDragEnd={() => {
+                  setDraggedFile(null);
+                  setDragOverFolder(null);
+                }}
               >
                 <div className="flex items-center min-w-0 flex-1">
                   <ItemIcon size={14} className={`mr-1.5 flex-shrink-0 ${isSelected ? "text-[#007acc]" : itemIconClassName}`} />
@@ -772,10 +871,20 @@ export default function App() {
                     return (
                       <div
                         key={filename}
+                        draggable
                         className={`flex items-center py-2 pr-3 pl-6 text-[11px] cursor-pointer ${
                           isFileSelected ? "text-white font-semibold bg-[#2a2d2e]" : "text-gray-500 hover:text-gray-300"
                         }`}
                         onClick={() => handleSelectGist(gist, filename)}
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", filename);
+                          setDraggedFile({ gist, filename });
+                        }}
+                        onDragEnd={() => {
+                          setDraggedFile(null);
+                          setDragOverFolder(null);
+                        }}
                       >
                         <ChildIcon size={11} className={`mr-1.5 flex-shrink-0 ${isFileSelected ? "text-[#007acc]" : childIconClassName}`} />
                         <span className="truncate">{filename}</span>
@@ -858,7 +967,21 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1 custom-scrollbar">
+        <div
+          className={`flex-1 overflow-y-auto px-2 py-3 space-y-1 custom-scrollbar ${
+            dragOverFolder === "" ? "bg-[#202020]" : ""
+          }`}
+          onDragOver={(event) => {
+            if (!draggedFile) return;
+            event.preventDefault();
+            setDragOverFolder("");
+          }}
+          onDragLeave={() => setDragOverFolder(null)}
+          onDrop={(event) => {
+            event.preventDefault();
+            handleMoveFileToFolder("");
+          }}
+        >
           {loading && gists.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 space-y-3">
               <RefreshCw className="animate-spin text-[#007acc]" size={20} />
