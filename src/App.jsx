@@ -932,6 +932,7 @@ export default function App() {
               canDragAndDrop
               canDropOnFolder
               canReorderItems={false}
+              canInvokePrimaryActionOnItemContainer
               disableMultiselect
               defaultInteractionMode="click-arrow-to-expand"
               onExpandItem={(item) => {
