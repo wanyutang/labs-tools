@@ -75,12 +75,18 @@ const getFileIconMeta = (filename) => {
 };
 
 const parseDottedFilename = (filename) => {
-  const cleanPath = (filename || "Untitled").replace(extensionPattern, "");
-  const parts = cleanPath.split(".").filter(Boolean);
+  const rawName = filename || "Untitled";
+  const parts = rawName.split(".").filter(Boolean);
+  const hasExtension = parts.length >= 2;
+  const extension = hasExtension ? parts.at(-1) : "";
+  const displayName = hasExtension ? parts.at(-2) : (parts[0] || rawName);
+  const folders = hasExtension ? parts.slice(0, -2) : [];
+
   return {
-    cleanPath,
-    folders: parts.slice(0, -1),
-    displayName: parts.at(-1) || cleanPath || "Untitled"
+    cleanPath: hasExtension ? [...folders, displayName].join(".") : displayName,
+    extension,
+    folders,
+    displayName
   };
 };
 
