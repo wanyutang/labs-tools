@@ -9,3 +9,10 @@ GitHub Pages URL:
 ```text
 https://wanyutang.github.io/labs-tools/
 ```
+
+## Agent Harness
+
+Repo-native agent entry and validation live in `AGENTS.md` and
+`agent-tools/bin/validate-harness.sh`. New sessions should read
+`docs/reports/current-session-handoff.md` and `docs/reports/project-map.md`
+before opening or consuming GitHub issues.

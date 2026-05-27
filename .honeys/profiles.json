@@ -1,0 +1,10 @@
+{
+  "project": "labs-tools",
+  "active_profiles": [
+    "vite-react-pwa"
+  ],
+  "notes": [
+    "This repo uses a project-local harness profile because the upstream harness generator does not yet ship a reusable Vite/React/PWA profile.",
+    "Keep profile guidance in references/vite-react-pwa.md until it is promoted into the shared harness system."
+  ]
+}
