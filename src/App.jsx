@@ -95,6 +95,30 @@ const parseDottedFilename = (filename) => {
   };
 };
 
+const getPrimaryFilename = (gist) => {
+  const files = Object.keys(gist?.files || {});
+  if (files.length <= 1) return files[0] || "Untitled";
+
+  return (
+    files.find(filename => {
+      const ext = getExtension(filename);
+      return ["md", "markdown"].includes(ext) && parseDottedFilename(filename).groupParts.length > 0;
+    }) ||
+    files.find(filename => ["md", "markdown"].includes(getExtension(filename))) ||
+    files[0] ||
+    "Untitled"
+  );
+};
+
+const getTreeItemIdForFile = (gist, filename) => {
+  if (!gist || !filename) return "";
+  const files = Object.keys(gist.files || {});
+  const primaryFilename = getPrimaryFilename(gist);
+  return files.length > 1 && filename === primaryFilename
+    ? `gist:${gist.id}`
+    : `file:${gist.id}:${filename}`;
+};
+
 export default function App() {
   const [token, setToken] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
@@ -118,6 +142,7 @@ export default function App() {
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedFolders, setExpandedFolders] = useState(new Set());
+  const [expandedFileGroups, setExpandedFileGroups] = useState(new Set());
   const [isPreview, setIsPreview] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
 
@@ -530,6 +555,69 @@ export default function App() {
 
       const files = Object.keys(gist.files || {});
       const targetFiles = files.length ? files : ["Untitled"];
+      const primaryFilename = getPrimaryFilename(gist);
+      const primaryMeta = parseDottedFilename(primaryFilename);
+
+      if (targetFiles.length > 1) {
+        let parentId = "root";
+        let folderPath = "";
+
+        for (const part of primaryMeta.folders) {
+          folderPath = folderPath ? `${folderPath}.${part}` : part;
+          const folderId = `folder:${folderPath}`;
+          if (!items[folderId]) {
+            items[folderId] = {
+              index: folderId,
+              isFolder: true,
+              children: [],
+              data: { type: "folder", title: part, folderPath }
+            };
+          }
+          if (!items[parentId].children.includes(folderId)) {
+            items[parentId].children.push(folderId);
+          }
+          parentId = folderId;
+        }
+
+        const groupId = `gist:${gist.id}`;
+        items[groupId] = {
+          index: groupId,
+          isFolder: true,
+          children: [],
+          data: {
+            type: "fileGroup",
+            title: primaryMeta.displayName,
+            gist,
+            filename: primaryFilename,
+            folderPath: primaryMeta.folders.join(".")
+          }
+        };
+        if (!items[parentId].children.includes(groupId)) {
+          items[parentId].children.push(groupId);
+        }
+
+        targetFiles
+          .filter(filename => filename !== primaryFilename)
+          .forEach(filename => {
+            const { displayName } = parseDottedFilename(filename);
+            const fileId = `file:${gist.id}:${filename}`;
+            items[fileId] = {
+              index: fileId,
+              isFolder: false,
+              children: [],
+              data: {
+                type: "file",
+                title: displayName,
+                gist,
+                filename
+              }
+            };
+            if (!items[groupId].children.includes(fileId)) {
+              items[groupId].children.push(fileId);
+            }
+          });
+        return;
+      }
 
       targetFiles.forEach(filename => {
         const { folders, displayName } = parseDottedFilename(filename);
@@ -810,8 +898,11 @@ export default function App() {
   };
 
   const treeItems = useMemo(() => buildTree(gists), [gists, searchQuery]);
-  const selectedTreeItems = activeGist && activeFile ? [`file:${activeGist.id}:${activeFile}`] : [];
-  const expandedTreeItems = Array.from(expandedFolders).map(folderPath => `folder:${folderPath}`);
+  const selectedTreeItems = activeGist && activeFile ? [getTreeItemIdForFile(activeGist, activeFile)] : [];
+  const expandedTreeItems = [
+    ...Array.from(expandedFolders).map(folderPath => `folder:${folderPath}`),
+    ...Array.from(expandedFileGroups)
+  ];
   const hasTreeItems = treeItems.root.children.length > 0;
   const charCount = editorContent ? editorContent.length : 0;
   const wordCount = editorContent ? editorContent.trim().split(/\s+/).filter(Boolean).length : 0;
@@ -880,12 +971,20 @@ export default function App() {
               disableMultiselect
               defaultInteractionMode="click-item-to-expand"
               onExpandItem={(item) => {
-                if (item.data?.folderPath) {
+                if (item.data?.type === "fileGroup") {
+                  setExpandedFileGroups(prev => new Set(prev).add(item.index));
+                } else if (item.data?.folderPath) {
                   setExpandedFolders(prev => new Set(prev).add(item.data.folderPath));
                 }
               }}
               onCollapseItem={(item) => {
-                if (item.data?.folderPath) {
+                if (item.data?.type === "fileGroup") {
+                  setExpandedFileGroups(prev => {
+                    const next = new Set(prev);
+                    next.delete(item.index);
+                    return next;
+                  });
+                } else if (item.data?.folderPath) {
                   setExpandedFolders(prev => {
                     const next = new Set(prev);
                     next.delete(item.data.folderPath);
@@ -894,7 +993,7 @@ export default function App() {
                 }
               }}
               onPrimaryAction={(item) => {
-                if (item.data?.type === "file") {
+                if (item.data?.type === "file" || item.data?.type === "fileGroup") {
                   handleSelectGist(item.data.gist, item.data.filename);
                 }
               }}
