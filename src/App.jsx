@@ -33,7 +33,7 @@ import {
   Table2
 } from "lucide-react";
 
-const extensionPattern = /\.(md|markdown|txt|js|css|scss|less|html|htm|json|py|ipynb|sh|bash|zsh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|tsv|xlsx|xls|sql|toml|ini|env|pdf|doc|docx)$/i;
+const extensionPattern = /\.(md|markdown|txt|js|css|scss|less|html|htm|json|py|java|kt|go|rs|c|cpp|cs|php|rb|ipynb|sh|bash|zsh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|tsv|xlsx|xls|sql|toml|ini|env|pdf|doc|docx)$/i;
 
 const getExtension = (filename = "") => {
   const match = filename.toLowerCase().match(/\.([^.]+)$/);
@@ -46,7 +46,7 @@ const getFileIconMeta = (filename) => {
   if (["md", "markdown", "txt"].includes(ext)) {
     return { Icon: BookOpenText, className: "text-[#4ea1ff]" };
   }
-  if (["js", "jsx", "ts", "tsx", "vue", "svelte", "html", "htm", "css", "scss", "less"].includes(ext)) {
+  if (["js", "jsx", "ts", "tsx", "vue", "svelte", "html", "htm", "css", "scss", "less", "java", "kt", "go", "rs", "c", "cpp", "cs", "php", "rb"].includes(ext)) {
     return { Icon: FileCode, className: "text-[#dcdcaa]" };
   }
   if (["json", "yml", "yaml", "toml", "xml", "ini", "env"].includes(ext)) {
