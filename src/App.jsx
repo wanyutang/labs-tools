@@ -25,7 +25,7 @@ import {
   ExternalLink
 } from "lucide-react";
 
-const extensionPattern = /\.(md|markdown|txt|js|css|html|htm|json|py|sh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|toml|ini|env)$/i;
+const extensionPattern = /\.(md|markdown|txt|js|css|html|htm|json|py|ipynb|sh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|toml|ini|env)$/i;
 
 export default function App() {
   const [token, setToken] = useState("");
@@ -357,15 +357,8 @@ export default function App() {
     }
   };
 
-  const getGistPath = (gist) => {
-    let name = "";
-    if (gist.description && gist.description.trim() !== "") {
-      name = gist.description;
-    } else {
-      const files = Object.keys(gist.files || {});
-      name = files[0] || "Untitled";
-    }
-    return name.replace(extensionPattern, "");
+  const getFilePath = (filename) => {
+    return (filename || "Untitled").replace(extensionPattern, "");
   };
 
   const buildTree = (gistsList) => {
@@ -379,7 +372,9 @@ export default function App() {
       ) : true;
       if (!matchesSearch) return;
 
-      const pathStr = getGistPath(gist);
+      const files = Object.keys(gist.files || {});
+      const primaryFile = files[0] || "Untitled";
+      const pathStr = getFilePath(primaryFile);
       const parts = pathStr.split(".").filter(Boolean);
       let currentNode = root;
 
@@ -399,7 +394,8 @@ export default function App() {
       const lastPart = parts[parts.length - 1] || "Untitled";
       currentNode.gists.push({
         displayName: lastPart,
-        gist
+        gist,
+        filename: primaryFile
       });
     });
     return root;
@@ -674,14 +670,14 @@ export default function App() {
           );
         })}
 
-        {node.gists.map(({ displayName, gist }) => {
-          const isSelected = activeGist?.id === gist.id;
+        {node.gists.map(({ displayName, gist, filename }) => {
+          const isSelected = activeGist?.id === gist.id && activeFile === filename;
           const isGistExpanded = expandedGists.has(gist.id);
           const files = Object.keys(gist.files || {});
           const hasMultipleFiles = files.length > 1;
 
           return (
-            <div key={gist.id}>
+            <div key={`${gist.id}:${filename}`}>
               <div
                 className={`flex items-center justify-between py-2.5 px-3 cursor-pointer text-xs transition-colors rounded ${
                   isSelected
@@ -689,7 +685,7 @@ export default function App() {
                     : "hover:bg-[#2a2d2e] text-[#b3b3b3]"
                 }`}
                 style={{ paddingLeft: `${depth * 12 + 12}px` }}
-                onClick={() => handleSelectGist(gist, files[0])}
+                onClick={() => handleSelectGist(gist, filename)}
               >
                 <div className="flex items-center min-w-0 flex-1">
                   <FileText size={14} className={`mr-1.5 flex-shrink-0 ${isSelected ? "text-[#007acc]" : "text-gray-500"}`} />
@@ -974,7 +970,7 @@ export default function App() {
               </div>
             </div>
             <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-500">
-              <span className="truncate">{getGistPath(activeGist).replace(/\./g, " / ")}</span>
+              <span className="truncate">{getFilePath(activeFile).replace(/\./g, " / ")}</span>
             </div>
           </div>
         )}
