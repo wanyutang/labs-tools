@@ -41,6 +41,9 @@ updated_at: 2026-05-28
 - Each tool module should expose metadata for index and shell generation:
   stable id, title, path, category, description, standalone support, and needed
   browser-provided credentials such as GitHub or Gemini keys.
+- Reusable credentials use a shared browser-local store. Tool metadata declares
+  required credentials. The optional shell can provide settings UI, while each
+  standalone tool must still handle missing credentials and show its own prompt.
 - Labs-tools product work is governed only through public-safe repo markdown
   reports by default because the repo, committed reports, and GitHub Issues are
   public. Private strategy or sensitive notes must stay outside this public repo.
