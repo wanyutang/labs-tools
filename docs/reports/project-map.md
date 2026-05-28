@@ -30,6 +30,8 @@ updated_at: 2026-05-28
 - Independent tools use folder-style URLs: `/labs-tools/` is the public index,
   and each tool gets its own path such as `/labs-tools/gist-editor/`,
   `/labs-tools/markmap/`, or `/labs-tools/translator/`.
+- Every independent tool page provides a lightweight path back to the Labs Tools
+  index, but tools are not forced into one shared header/sidebar/workspace shell.
 - Labs-tools product work is governed only through public-safe repo markdown
   reports by default because the repo, committed reports, and GitHub Issues are
   public. Private strategy or sensitive notes must stay outside this public repo.
