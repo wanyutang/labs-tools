@@ -67,10 +67,12 @@ changes app behavior, harness files, PWA assets, package metadata, or deployment
 
 ## Queue Rules
 
-This repo is public, so GitHub Issues are public too. By default, keep planning,
-session state, and non-public product notes in repo markdown reports such as
-`docs/reports/current-session-handoff.md`, `docs/reports/project-map.md`, and
-`docs/reports/issue-loop-log.md`. Create GitHub Issues only when the User
+This repo is public, so committed reports, GitHub Issues, milestones, pull
+requests, and code are public. Keep only public-safe planning and session state
+in repo markdown reports such as `docs/reports/current-session-handoff.md`,
+`docs/reports/project-map.md`, and `docs/reports/issue-loop-log.md`. Do not
+commit private strategy, sensitive notes, user secrets, private screenshots, or
+non-public account data to this repo. Create GitHub Issues only when the User
 explicitly asks to publish that work publicly.
 
 When the User explicitly asks to create public issues, prefer 1-3 small GitHub
@@ -85,6 +87,10 @@ issues per replenish pass. Each issue should include:
 
 Open milestone planning issues only after explicit User approval. An empty
 milestone is not evidence of completion.
+
+If the repo should not accept public reports from others, prefer disabling
+GitHub Issues in repository settings. Do not treat public GitHub Issues as a
+private tracker for this project.
 
 ## Honeys Governance
 
