@@ -35,6 +35,9 @@ updated_at: 2026-05-28
 - The first `/labs-tools/` index should be a simple mobile-friendly tool list
   with tool name, short purpose, category/tag, and open action. Search and
   recent-use features wait until the tool count justifies them.
+- Architecture direction: modular tools with an optional shared shell. Each
+  tool should be a standalone React module that can run by itself, while the
+  main app may wrap it in shared navigation, settings, and safe-area behavior.
 - Labs-tools product work is governed only through public-safe repo markdown
   reports by default because the repo, committed reports, and GitHub Issues are
   public. Private strategy or sensitive notes must stay outside this public repo.
