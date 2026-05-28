@@ -22,6 +22,9 @@ Current pass: Phase 1 first checklist item is complete. `src/App.jsx` is now a
 thin entry, and the existing Gist editor implementation lives under
 `src/tools/gist-editor/GistEditor.jsx`.
 
+Mobile readability issue `#3` is in progress to increase phone-only text,
+shortcut, and icon sizing without changing desktop layout.
+
 ## Entry Checklist
 
 - `git status -sb`
@@ -48,6 +51,8 @@ thin entry, and the existing Gist editor implementation lives under
 5. When working from public issue `#1`, pick a small unchecked checklist item,
    implement, validate, comment, and update the checklist/report state.
 6. Next likely `#1` item: add tool metadata for the Gist editor.
+7. Verify issue `#3` on a real phone after deploy; adjust mobile sizing only if
+   the UI still feels too small or becomes crowded.
 
 ## Open Risks
 
