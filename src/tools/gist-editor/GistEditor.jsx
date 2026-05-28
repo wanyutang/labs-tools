@@ -36,6 +36,13 @@ const getExtension = (filename = "") => {
 };
 
 const VSCODE_ICON_BASE_URL = "https://raw.githubusercontent.com/vscode-icons/vscode-icons/master/icons/";
+const MIN_EDITOR_FONT_SIZE = 13;
+const MAX_EDITOR_FONT_SIZE = 28;
+const DEFAULT_EDITOR_FONT_SIZE = 15;
+
+const clampEditorFontSize = (value) => (
+  Math.min(MAX_EDITOR_FONT_SIZE, Math.max(MIN_EDITOR_FONT_SIZE, Math.round(value)))
+);
 
 const VSCodeIcon = ({ iconName }) => (
   <img
@@ -117,9 +124,14 @@ export default function GistEditor() {
   const [aiResult, setAiResult] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [suggestedFilename, setSuggestedFilename] = useState("");
+  const [editorFontSize, setEditorFontSize] = useState(() => {
+    const savedSize = Number(localStorage.getItem("gist_editor_font_size"));
+    return Number.isFinite(savedSize) ? clampEditorFontSize(savedSize) : DEFAULT_EDITOR_FONT_SIZE;
+  });
 
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
+  const editorPinchRef = useRef(null);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("github_gist_token");
@@ -158,6 +170,10 @@ export default function GistEditor() {
         .catch(() => {});
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("gist_editor_font_size", String(editorFontSize));
+  }, [editorFontSize]);
 
   const showToast = (message, type = "info") => {
     setToast({ show: true, message, type });
@@ -668,6 +684,36 @@ export default function GistEditor() {
     }
   };
 
+  const adjustEditorFontSize = (delta) => {
+    setEditorFontSize(size => clampEditorFontSize(size + delta));
+  };
+
+  const getTouchDistance = (touches) => {
+    const [first, second] = touches;
+    return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
+  };
+
+  const handleEditorTouchStart = (event) => {
+    if (event.touches.length !== 2) return;
+    editorPinchRef.current = {
+      distance: getTouchDistance(event.touches),
+      fontSize: editorFontSize
+    };
+  };
+
+  const handleEditorTouchMove = (event) => {
+    if (event.touches.length !== 2 || !editorPinchRef.current) return;
+    event.preventDefault();
+    const scale = getTouchDistance(event.touches) / editorPinchRef.current.distance;
+    setEditorFontSize(clampEditorFontSize(editorPinchRef.current.fontSize * scale));
+  };
+
+  const handleEditorTouchEnd = (event) => {
+    if (event.touches.length < 2) {
+      editorPinchRef.current = null;
+    }
+  };
+
   const insertSymbol = (symbol) => {
     if (!textareaRef.current) return;
     const start = textareaRef.current.selectionStart;
@@ -869,6 +915,11 @@ export default function GistEditor() {
   const hasTreeItems = treeItems.root.children.length > 0;
   const charCount = editorContent ? editorContent.length : 0;
   const wordCount = editorContent ? editorContent.trim().split(/\s+/).filter(Boolean).length : 0;
+  const editorLineHeight = Math.round(editorFontSize * 1.6);
+  const editorTextStyle = {
+    fontSize: `${editorFontSize}px`,
+    lineHeight: `${editorLineHeight}px`
+  };
   const metadataDirty = Boolean(activeGist) && (
     draftFilename.trim() !== activeFile ||
     draftDescription.trim() !== (activeGist.description || "")
@@ -1209,13 +1260,20 @@ export default function GistEditor() {
               </article>
             </div>
           ) : (
-            <div className="flex-1 flex min-h-0 relative">
+            <div
+              className="flex-1 flex min-h-0 relative touch-pan-y"
+              onTouchStart={handleEditorTouchStart}
+              onTouchMove={handleEditorTouchMove}
+              onTouchEnd={handleEditorTouchEnd}
+              onTouchCancel={handleEditorTouchEnd}
+            >
               <div
                 ref={lineNumbersRef}
                 className="w-11 bg-[#1e1e1e] text-right pr-2 select-none font-mono text-[13px] leading-[22px] py-3 text-[#5c5c5c] border-r border-[#2d2d2d] overflow-hidden"
+                style={editorTextStyle}
               >
                 {editorContent.split("\n").map((_, index) => (
-                  <div key={index} className="h-[22px]">{index + 1}</div>
+                  <div key={index} style={{ height: `${editorLineHeight}px` }}>{index + 1}</div>
                 ))}
               </div>
 
@@ -1226,6 +1284,7 @@ export default function GistEditor() {
                 onScroll={handleScroll}
                 placeholder="開始編寫精彩的內容..."
                 className="flex-1 bg-transparent border-none outline-none font-mono text-[13px] leading-[22px] py-3 px-4 resize-none text-[#d4d4d4] placeholder-gray-600 overflow-y-auto custom-scrollbar focus:ring-0 selection:bg-[#007acc]/30"
+                style={editorTextStyle}
               />
             </div>
           )}
@@ -1240,8 +1299,24 @@ export default function GistEditor() {
                 <button onClick={() => insertSymbol("`")} className="h-8 w-8 text-xs font-mono rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center">`</button>
                 <button onClick={() => insertSymbol("[] ")} className="h-8 w-8 text-xs rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center">[ ]</button>
                 <button onClick={() => insertSymbol("  ")} className="h-8 w-12 text-xs font-medium rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center">Tab</button>
+                <span className="mx-1 h-8 w-px bg-[#3c3c3c]" aria-hidden="true" />
+                <button
+                  onClick={() => adjustEditorFontSize(-1)}
+                  className="h-8 min-w-10 px-2 text-xs font-semibold rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center"
+                  aria-label="縮小編輯文字"
+                >
+                  A-
+                </button>
+                <button
+                  onClick={() => adjustEditorFontSize(1)}
+                  className="h-8 min-w-10 px-2 text-xs font-semibold rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center"
+                  aria-label="放大編輯文字"
+                >
+                  A+
+                </button>
               </div>
               <div className="text-[10px] text-gray-500 pr-2 flex space-x-3">
+                <span>{editorFontSize}px</span>
                 <span>字數: {charCount}</span>
                 <span>單詞: {wordCount}</span>
               </div>

@@ -24,6 +24,8 @@ thin entry, and the existing Gist editor implementation lives under
 
 Mobile readability issue `#3` is in progress to increase phone-only text,
 shortcut, and icon sizing without changing desktop layout.
+Editor-only zoom issue `#4` adds `A-`/`A+` controls and two-finger pinch
+handling for the edit pane while keeping the bottom formatting bar fixed.
 
 ## Entry Checklist
 
@@ -53,6 +55,8 @@ shortcut, and icon sizing without changing desktop layout.
 6. Next likely `#1` item: add tool metadata for the Gist editor.
 7. Verify issue `#3` on a real phone after deploy; adjust mobile sizing only if
    the UI still feels too small or becomes crowded.
+8. Verify issue `#4` on a real phone with an opened gist: the editor text and
+   line numbers should zoom together, while the bottom formatting bar stays put.
 
 ## Open Risks
 
