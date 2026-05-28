@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { getIconForFile, getIconForFolder, getIconForOpenFolder } from "vscode-icons-js";
 import "react-complex-tree/lib/style-modern.css";
 import "github-markdown-css/github-markdown-dark.css";
+import CodeEditor from "./CodeEditor.jsx";
 import {
   Menu,
   X,
@@ -25,7 +26,8 @@ import {
   FileEdit,
   Send,
   Check,
-  ExternalLink
+  ExternalLink,
+  FolderInput
 } from "lucide-react";
 
 const extensionPattern = /\.(md|markdown|txt|js|css|scss|less|html|htm|json|py|java|kt|go|rs|c|cpp|cs|php|rb|ipynb|sh|bash|zsh|ts|tsx|jsx|vue|svelte|yml|yaml|xml|csv|tsv|xlsx|xls|sql|toml|ini|env|pdf|doc|docx)$/i;
@@ -114,6 +116,7 @@ export default function GistEditor() {
   const [expandedFileGroups, setExpandedFileGroups] = useState(new Set());
   const [isPreview, setIsPreview] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+  const [showMoveModal, setShowMoveModal] = useState(false);
 
   const [showNewGistModal, setShowNewGistModal] = useState(false);
   const [newGistName, setNewGistName] = useState("");
@@ -130,8 +133,7 @@ export default function GistEditor() {
   });
   const [softWrap, setSoftWrap] = useState(() => localStorage.getItem("gist_editor_soft_wrap") !== "false");
 
-  const textareaRef = useRef(null);
-  const lineNumbersRef = useRef(null);
+  const editorRef = useRef(null);
   const editorPinchRef = useRef(null);
 
   useEffect(() => {
@@ -424,7 +426,14 @@ export default function GistEditor() {
       }
 
       if (targetFolderPath) {
-        setExpandedFolders(prev => new Set(prev).add(targetFolderPath));
+        setExpandedFolders(prev => {
+          const next = new Set(prev);
+          const parts = targetFolderPath.split(".").filter(Boolean);
+          parts.forEach((_, index) => {
+            next.add(parts.slice(0, index + 1).join("."));
+          });
+          return next;
+        });
       }
       showToast("已移動檔案並更新檔名。", "success");
     } catch (err) {
@@ -436,22 +445,21 @@ export default function GistEditor() {
   };
 
   const getDropFolderPath = (target, items) => {
-    if (!target) return "";
+    if (!target) return null;
     if (target.targetType === "root") return "";
 
-    const targetItemId = target.targetItem || target.parentItem;
-    const targetItem = targetItemId ? items[targetItemId] : null;
-    if (!targetItem) return "";
-
     if (target.targetType === "item") {
-      return targetItem.data?.type === "folder" ? targetItem.data.folderPath : "";
+      const targetItem = items[target.targetItem];
+      return targetItem?.data?.type === "folder" ? targetItem.data.folderPath : null;
     }
 
     if (target.targetType === "between-items") {
-      return targetItem.data?.type === "folder" ? targetItem.data.folderPath : "";
+      if (target.parentItem === "root") return "";
+      const parentItem = items[target.parentItem];
+      return parentItem?.data?.type === "folder" ? parentItem.data.folderPath : null;
     }
 
-    return "";
+    return null;
   };
 
   const handleDeleteGist = async (gistId) => {
@@ -683,12 +691,6 @@ export default function GistEditor() {
     }
   };
 
-  const handleScroll = () => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  };
-
   const adjustEditorFontSize = (delta) => {
     setEditorFontSize(size => clampEditorFontSize(size + delta));
   };
@@ -720,18 +722,7 @@ export default function GistEditor() {
   };
 
   const insertSymbol = (symbol) => {
-    if (!textareaRef.current) return;
-    const start = textareaRef.current.selectionStart;
-    const end = textareaRef.current.selectionEnd;
-    const before = editorContent.substring(0, start);
-    const after = editorContent.substring(end);
-
-    setEditorContent(before + symbol + after);
-
-    setTimeout(() => {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(start + symbol.length, start + symbol.length);
-    }, 50);
+    editorRef.current?.insertText(symbol);
   };
 
   const handleInstallPwa = async () => {
@@ -912,6 +903,23 @@ export default function GistEditor() {
   };
 
   const treeItems = useMemo(() => buildTree(gists), [gists, searchQuery]);
+  const folderOptions = useMemo(() => {
+    const paths = new Set([""]);
+    gists.forEach(gist => {
+      Object.keys(gist.files || {}).forEach(filename => {
+        const { folders } = parseDottedFilename(filename);
+        folders.forEach((_, index) => {
+          paths.add(folders.slice(0, index + 1).join("."));
+        });
+      });
+    });
+    return Array.from(paths)
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }))
+      .map(path => ({
+        path,
+        label: path ? path.replace(/\./g, " / ") : "根目錄"
+      }));
+  }, [gists]);
   const selectedTreeItems = activeGist && activeFile ? [getTreeItemIdForFile(activeGist, activeFile)] : [];
   const expandedTreeItems = [
     ...Array.from(expandedFolders).map(folderPath => `folder:${folderPath}`),
@@ -921,16 +929,11 @@ export default function GistEditor() {
   const charCount = editorContent ? editorContent.length : 0;
   const wordCount = editorContent ? editorContent.trim().split(/\s+/).filter(Boolean).length : 0;
   const editorLineHeight = Math.round(editorFontSize * 1.6);
-  const editorTextStyle = {
-    fontSize: `${editorFontSize}px`,
-    lineHeight: `${editorLineHeight}px`,
-    whiteSpace: softWrap ? "pre-wrap" : "pre",
-    overflowWrap: softWrap ? "break-word" : "normal"
-  };
   const metadataDirty = Boolean(activeGist) && (
     draftFilename.trim() !== activeFile ||
     draftDescription.trim() !== (activeGist.description || "")
   );
+  const currentFolderPath = activeFile ? parseDottedFilename(activeFile).folders.join(".") : "";
 
   return (
     <div className="safe-screen flex w-full bg-[#1e1e1e] text-[#d4d4d4] font-sans overflow-hidden select-none">
@@ -1032,19 +1035,14 @@ export default function GistEditor() {
               canDrag={(items) => items.every(item => item.data?.type === "file" || item.data?.type === "fileGroup")}
               canDropAt={(items, target) => {
                 if (!items.every(item => item.data?.type === "file" || item.data?.type === "fileGroup")) return false;
-                if (target.targetType === "root") return true;
-                if (target.targetType === "item") {
-                  return treeItems[target.targetItem]?.data?.type === "folder";
-                }
-                if (target.targetType === "between-items") {
-                  return target.parentItem === "root" || treeItems[target.parentItem]?.data?.type === "folder";
-                }
-                return false;
+                return getDropFolderPath(target, treeItems) !== null;
               }}
               onDrop={(items, target) => {
                 const fileItem = items.find(item => item.data?.type === "file" || item.data?.type === "fileGroup");
                 if (!fileItem) return;
-                handleMoveFileToFolder(getDropFolderPath(target, treeItems), fileItem.data);
+                const targetFolderPath = getDropFolderPath(target, treeItems);
+                if (targetFolderPath === null) return;
+                handleMoveFileToFolder(targetFolderPath, fileItem.data);
               }}
               renderItemTitle={({ item, context }) => {
                 if (item.data?.type === "folder") {
@@ -1143,24 +1141,21 @@ export default function GistEditor() {
                 <Sparkles size={16} />
               </button>
 
-              <div className="flex items-center rounded bg-[#252526] overflow-hidden">
-                <button
-                  onClick={() => setIsPreview(false)}
-                  className={`p-2 flex items-center gap-1.5 transition-colors ${!isPreview ? "bg-[#007acc] text-white" : "hover:bg-[#2d2d2d] text-gray-400"}`}
-                  title="Editor"
-                >
-                  <FileCode size={16} />
-                  <span className="hidden lg:inline text-xs font-semibold">Editor</span>
-                </button>
-                <button
-                  onClick={() => setIsPreview(true)}
-                  className={`p-2 flex items-center gap-1.5 transition-colors ${isPreview ? "bg-[#007acc] text-white" : "hover:bg-[#2d2d2d] text-gray-400"}`}
-                  title="View"
-                >
-                  <Eye size={16} />
-                  <span className="hidden lg:inline text-xs font-semibold">View</span>
-                </button>
-              </div>
+              <button
+                onClick={() => setIsPreview(value => !value)}
+                className={`p-2 rounded transition-colors ${isPreview ? "bg-[#007acc] text-white" : "hover:bg-[#2d2d2d] text-gray-400"}`}
+                title={isPreview ? "切回編輯" : "預覽"}
+              >
+                {isPreview ? <FileCode size={16} /> : <Eye size={16} />}
+              </button>
+
+              <button
+                onClick={() => setShowMoveModal(true)}
+                className="p-2 hover:bg-[#2d2d2d] rounded text-gray-400 transition-colors"
+                title="移動到資料夾"
+              >
+                <FolderInput size={16} />
+              </button>
 
               <button
                 onClick={handleSaveGist}
@@ -1267,34 +1262,18 @@ export default function GistEditor() {
               </article>
             </div>
           ) : (
-            <div
-              className="flex-1 flex min-h-0 relative touch-pan-y"
-              onTouchStart={handleEditorTouchStart}
-              onTouchMove={handleEditorTouchMove}
-              onTouchEnd={handleEditorTouchEnd}
-              onTouchCancel={handleEditorTouchEnd}
-            >
-              <div
-                ref={lineNumbersRef}
-                className="w-11 bg-[#1e1e1e] text-right pr-2 select-none font-mono text-[13px] leading-[22px] py-3 text-[#5c5c5c] border-r border-[#2d2d2d] overflow-hidden"
-                style={editorTextStyle}
-              >
-                {editorContent.split("\n").map((_, index) => (
-                  <div key={index} style={{ height: `${editorLineHeight}px` }}>{index + 1}</div>
-                ))}
-              </div>
-
-              <textarea
-                ref={textareaRef}
-                value={editorContent}
-                onChange={(e) => setEditorContent(e.target.value)}
-                onScroll={handleScroll}
-                placeholder="開始編寫精彩的內容..."
-                wrap={softWrap ? "soft" : "off"}
-                className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] leading-[22px] py-3 px-4 resize-none text-[#d4d4d4] placeholder-gray-600 overflow-auto custom-scrollbar focus:ring-0 selection:bg-[#007acc]/30"
-                style={editorTextStyle}
-              />
-            </div>
+            <CodeEditor
+              ref={editorRef}
+              filename={activeFile}
+              value={editorContent}
+              onChange={setEditorContent}
+              fontSize={editorFontSize}
+              lineHeight={editorLineHeight}
+              softWrap={softWrap}
+              onPinchStart={handleEditorTouchStart}
+              onPinchMove={handleEditorTouchMove}
+              onPinchEnd={handleEditorTouchEnd}
+            />
           )}
 
           {activeGist && !isPreview && (
@@ -1542,6 +1521,57 @@ export default function GistEditor() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMoveModal && activeGist && activeFile && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center px-4 safe-modal">
+          <div className="bg-[#252526] border border-[#3c3c3c] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-5 border-b border-[#3c3c3c] flex items-center justify-between">
+              <div className="flex min-w-0 items-center space-x-2 text-white">
+                <FolderInput size={18} className="text-[#007acc] flex-shrink-0" />
+                <span className="font-bold text-sm truncate">移動檔案</span>
+              </div>
+              <button onClick={() => setShowMoveModal(false)} className="p-1 hover:bg-[#37373d] rounded text-gray-400">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-[#3c3c3c] bg-[#1e1e1f]">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">目前檔案</div>
+              <div className="mt-1 truncate font-mono text-xs text-white">{activeFile}</div>
+            </div>
+
+            <div className="max-h-[58vh] overflow-y-auto p-2 custom-scrollbar">
+              {folderOptions.map(option => {
+                const isCurrent = option.path === currentFolderPath;
+                return (
+                  <button
+                    key={option.path || "root"}
+                    onClick={() => {
+                      if (isCurrent) {
+                        showToast("檔案已在這個資料夾。");
+                        return;
+                      }
+                      setShowMoveModal(false);
+                      handleMoveFileToFolder(option.path, { gist: activeGist, filename: activeFile });
+                    }}
+                    className={`w-full min-w-0 rounded-lg px-3 py-3 text-left transition-colors ${
+                      isCurrent
+                        ? "bg-[#37373d] text-white"
+                        : "text-[#d4d4d4] hover:bg-[#2d2d2d]"
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <VSCodeIcon iconName={option.path ? getIconForFolder(option.path.split(".").at(-1)) : getIconForOpenFolder("root")} />
+                      <span className="truncate text-xs font-semibold">{option.label}</span>
+                      {isCurrent && <Check size={14} className="ml-auto flex-shrink-0 text-[#007acc]" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

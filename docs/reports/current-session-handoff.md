@@ -28,8 +28,11 @@ Editor-only zoom issue `#4` adds `A-`/`A+` controls and two-finger pinch
 handling for the edit pane while keeping the bottom formatting bar fixed.
 PWA repair issue `#5` updates manifest installability and bumps the service
 worker cache after the installed app was reported broken.
-Future editor upgrade issue `#7` tracks replacing the plain textarea with
-CodeMirror 6 for syntax highlighting by file extension.
+Editor upgrade issue `#7` replaces the plain textarea with CodeMirror 6 for
+syntax highlighting by file extension. The same pass keeps the existing mobile
+format toolbar, adds a one-button Editor/View toggle, and adds a mobile-friendly
+"move to folder" action because iOS/PWA long-press drag is unreliable for the
+tree drag/drop rename workflow.
 
 ## Entry Checklist
 
@@ -63,8 +66,9 @@ CodeMirror 6 for syntax highlighting by file extension.
    line numbers should zoom together, while the bottom formatting bar stays put.
 9. Verify issue `#5` by refreshing/reinstalling the PWA on the phone after
    deploy; stale installed app cache may require removing and re-adding once.
-10. Keep CodeMirror syntax highlighting in issue `#7`; do not mix it into the
-    current phone readability/toolbar spacing pass.
+10. After deploying the CodeMirror pass, verify on phone that syntax colors,
+    vertical/horizontal editor scrolling, bottom toolbar, and the move-to-folder
+    modal all work with a real Gist token.
 
 ## Open Risks
 
@@ -72,5 +76,5 @@ CodeMirror 6 for syntax highlighting by file extension.
   XSS, markdown rendering, and clipboard/log exposure risks.
 - Mobile standalone PWA safe-area behavior needs screenshot validation on iOS-like
   viewports before UI-heavy changes.
-- Current React app is concentrated in `src/App.jsx`; split only around stable
-  workflow boundaries.
+- CodeMirror increases the production JS chunk size; later optimization can
+  split editor language packs if load time becomes noticeable on phones.
