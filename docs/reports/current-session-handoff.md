@@ -28,6 +28,8 @@ Editor-only zoom issue `#4` adds `A-`/`A+` controls and two-finger pinch
 handling for the edit pane while keeping the bottom formatting bar fixed.
 PWA repair issue `#5` updates manifest installability and bumps the service
 worker cache after the installed app was reported broken.
+Future editor upgrade issue `#7` tracks replacing the plain textarea with
+CodeMirror 6 for syntax highlighting by file extension.
 
 ## Entry Checklist
 
@@ -61,6 +63,8 @@ worker cache after the installed app was reported broken.
    line numbers should zoom together, while the bottom formatting bar stays put.
 9. Verify issue `#5` by refreshing/reinstalling the PWA on the phone after
    deploy; stale installed app cache may require removing and re-adding once.
+10. Keep CodeMirror syntax highlighting in issue `#7`; do not mix it into the
+    current phone readability/toolbar spacing pass.
 
 ## Open Risks
 

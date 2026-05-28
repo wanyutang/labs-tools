@@ -5,6 +5,7 @@
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --standalone-bottom-gap: 2px;
 }
 
 html,
@@ -41,6 +42,21 @@ body {
 
 .safe-toast {
   bottom: calc(3.5rem + var(--safe-bottom));
+}
+
+@media (display-mode: standalone) {
+  .safe-screen,
+  .safe-fixed-y {
+    padding-bottom: var(--standalone-bottom-gap);
+  }
+
+  .safe-modal {
+    padding-bottom: calc(0.5rem + var(--standalone-bottom-gap));
+  }
+
+  .safe-toast {
+    bottom: calc(3rem + var(--standalone-bottom-gap));
+  }
 }
 
 .custom-scrollbar {
@@ -122,36 +138,36 @@ body {
   }
 
   .safe-screen .text-\[10px\] {
-    font-size: 0.75rem;
-    line-height: 1rem;
-  }
-
-  .safe-screen .text-\[11px\] {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.125rem;
   }
 
-  .safe-screen .text-xs {
-    font-size: 0.875rem;
+  .safe-screen .text-\[11px\] {
+    font-size: 0.9375rem;
     line-height: 1.25rem;
   }
 
-  .safe-screen .text-sm {
+  .safe-screen .text-xs {
     font-size: 1rem;
     line-height: 1.375rem;
   }
 
+  .safe-screen .text-sm {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+  }
+
   .safe-screen .text-\[13px\] {
-    font-size: 0.9375rem;
-    line-height: 1.5625rem;
+    font-size: 1.0625rem;
+    line-height: 1.75rem;
   }
 
   .safe-screen .leading-\[22px\] {
-    line-height: 1.5625rem;
+    line-height: 1.75rem;
   }
 
   .safe-screen .h-\[22px\] {
-    height: 1.5625rem;
+    height: 1.75rem;
   }
 
   .safe-screen .h-8 {

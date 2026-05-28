@@ -38,7 +38,7 @@ const getExtension = (filename = "") => {
 const VSCODE_ICON_BASE_URL = "https://raw.githubusercontent.com/vscode-icons/vscode-icons/master/icons/";
 const MIN_EDITOR_FONT_SIZE = 13;
 const MAX_EDITOR_FONT_SIZE = 28;
-const DEFAULT_EDITOR_FONT_SIZE = 15;
+const DEFAULT_EDITOR_FONT_SIZE = 17;
 
 const clampEditorFontSize = (value) => (
   Math.min(MAX_EDITOR_FONT_SIZE, Math.max(MIN_EDITOR_FONT_SIZE, Math.round(value)))
@@ -128,6 +128,7 @@ export default function GistEditor() {
     const savedSize = Number(localStorage.getItem("gist_editor_font_size"));
     return Number.isFinite(savedSize) ? clampEditorFontSize(savedSize) : DEFAULT_EDITOR_FONT_SIZE;
   });
+  const [softWrap, setSoftWrap] = useState(() => localStorage.getItem("gist_editor_soft_wrap") !== "false");
 
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
@@ -174,6 +175,10 @@ export default function GistEditor() {
   useEffect(() => {
     localStorage.setItem("gist_editor_font_size", String(editorFontSize));
   }, [editorFontSize]);
+
+  useEffect(() => {
+    localStorage.setItem("gist_editor_soft_wrap", String(softWrap));
+  }, [softWrap]);
 
   const showToast = (message, type = "info") => {
     setToast({ show: true, message, type });
@@ -918,7 +923,9 @@ export default function GistEditor() {
   const editorLineHeight = Math.round(editorFontSize * 1.6);
   const editorTextStyle = {
     fontSize: `${editorFontSize}px`,
-    lineHeight: `${editorLineHeight}px`
+    lineHeight: `${editorLineHeight}px`,
+    whiteSpace: softWrap ? "pre-wrap" : "pre",
+    overflowWrap: softWrap ? "break-word" : "normal"
   };
   const metadataDirty = Boolean(activeGist) && (
     draftFilename.trim() !== activeFile ||
@@ -1283,7 +1290,8 @@ export default function GistEditor() {
                 onChange={(e) => setEditorContent(e.target.value)}
                 onScroll={handleScroll}
                 placeholder="開始編寫精彩的內容..."
-                className="flex-1 bg-transparent border-none outline-none font-mono text-[13px] leading-[22px] py-3 px-4 resize-none text-[#d4d4d4] placeholder-gray-600 overflow-y-auto custom-scrollbar focus:ring-0 selection:bg-[#007acc]/30"
+                wrap={softWrap ? "soft" : "off"}
+                className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] leading-[22px] py-3 px-4 resize-none text-[#d4d4d4] placeholder-gray-600 overflow-auto custom-scrollbar focus:ring-0 selection:bg-[#007acc]/30"
                 style={editorTextStyle}
               />
             </div>
@@ -1299,6 +1307,16 @@ export default function GistEditor() {
                 <button onClick={() => insertSymbol("`")} className="h-8 w-8 text-xs font-mono rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center">`</button>
                 <button onClick={() => insertSymbol("[] ")} className="h-8 w-8 text-xs rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center">[ ]</button>
                 <button onClick={() => insertSymbol("  ")} className="h-8 w-12 text-xs font-medium rounded hover:bg-[#37373d] text-gray-300 flex items-center justify-center">Tab</button>
+                <button
+                  onClick={() => setSoftWrap(wrap => !wrap)}
+                  className={`h-8 min-w-14 px-2 text-xs font-semibold rounded flex items-center justify-center transition-colors ${
+                    softWrap ? "bg-[#007acc] text-white" : "hover:bg-[#37373d] text-gray-300"
+                  }`}
+                  aria-pressed={softWrap}
+                  aria-label={softWrap ? "關閉自動斷行" : "開啟自動斷行"}
+                >
+                  Wrap
+                </button>
                 <span className="mx-1 h-8 w-px bg-[#3c3c3c]" aria-hidden="true" />
                 <button
                   onClick={() => adjustEditorFontSize(-1)}
