@@ -779,17 +779,16 @@ export default function App() {
         const files = { ...gist.files };
         delete files[activeFile];
         files[suggestedFilename] = { filename: suggestedFilename, content: editorContent };
-        return { ...gist, files, description: suggestedFilename };
+        return { ...gist, files };
       });
       setGists(updatedGists);
       setActiveFile(suggestedFilename);
       setDraftFilename(suggestedFilename);
-      setDraftDescription(suggestedFilename);
       setActiveGist(prev => {
         const files = { ...prev.files };
         delete files[activeFile];
         files[suggestedFilename] = { filename: suggestedFilename, content: editorContent };
-        return { ...prev, files, description: suggestedFilename };
+        return { ...prev, files };
       });
       setOriginalContent(editorContent);
       setSuggestedFilename("");
