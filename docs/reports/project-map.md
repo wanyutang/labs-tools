@@ -38,6 +38,9 @@ updated_at: 2026-05-28
 - Architecture direction: modular tools with an optional shared shell. Each
   tool should be a standalone React module that can run by itself, while the
   main app may wrap it in shared navigation, settings, and safe-area behavior.
+- Each tool module should expose metadata for index and shell generation:
+  stable id, title, path, category, description, standalone support, and needed
+  browser-provided credentials such as GitHub or Gemini keys.
 - Labs-tools product work is governed only through public-safe repo markdown
   reports by default because the repo, committed reports, and GitHub Issues are
   public. Private strategy or sensitive notes must stay outside this public repo.
