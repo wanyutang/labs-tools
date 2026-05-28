@@ -65,8 +65,17 @@ updated_at: 2026-05-28
 ## Current Issue Stock
 
 - `#1 Plan independent mobile tool pages` tracks public planning for the
-  independent mobile-first tool page structure:
+  independent mobile-first tool page structure and now contains a phased
+  small-waterfall checklist for future implementation passes:
   `https://github.com/wanyutang/labs-tools/issues/1`
+
+## Issue Run Loop
+
+Use public issues as phased checklists when the User approves public tracking.
+Each implementation pass should pick a small unchecked item or tight group,
+implement it, validate it, comment with the result, and update the issue or repo
+reports. Split follow-up issues only when a checklist item becomes too large or
+independently useful.
 
 ## Next Replenish Action
 

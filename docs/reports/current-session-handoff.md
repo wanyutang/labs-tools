@@ -15,6 +15,8 @@ GitHub Gist mobile editor.
 
 Public planning for the independent mobile tool page structure is tracked in
 `https://github.com/wanyutang/labs-tools/issues/1`.
+That issue now contains phased small-waterfall checklists for future
+implementation passes.
 
 ## Entry Checklist
 
@@ -39,6 +41,8 @@ Public planning for the independent mobile tool page structure is tracked in
 4. Keep labs-tools product governance in public-safe `wanyutang/labs-tools`
    reports by default; only send reusable Honeys process feedback to
    `wanyutang/agent-harness-workspace` as a public feedback issue when approved.
+5. When working from public issue `#1`, pick a small unchecked checklist item,
+   implement, validate, comment, and update the checklist/report state.
 
 ## Open Risks
 
