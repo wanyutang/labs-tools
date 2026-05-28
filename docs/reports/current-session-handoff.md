@@ -13,6 +13,9 @@ The mother harness is pinned in `.honeys/harness-install.json`, the active
 profile is recorded in `.honeys/profiles.json`, and the app itself is still the
 GitHub Gist mobile editor.
 
+Public planning for the independent mobile tool page structure is tracked in
+`https://github.com/wanyutang/labs-tools/issues/1`.
+
 ## Entry Checklist
 
 - `git status -sb`

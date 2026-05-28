@@ -45,7 +45,9 @@ updated_at: 2026-05-28
 
 ## Current Issue Stock
 
-No GitHub issues have been created for this repo by this harness yet.
+- `#1 Plan independent mobile tool pages` tracks public planning for the
+  independent mobile-first tool page structure:
+  `https://github.com/wanyutang/labs-tools/issues/1`
 
 ## Next Replenish Action
 
