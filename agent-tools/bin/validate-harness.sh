@@ -34,8 +34,8 @@ echo "ok"
 
 echo
 echo "## Browser credential boundary"
-rg -n "localStorage\\.setItem\\(\"github_gist_token\"|localStorage\\.getItem\\(\"github_gist_token\"" src/App.jsx >/dev/null
-rg -n "https://api\\.github\\.com/gists" src/App.jsx >/dev/null
+rg -n "localStorage\\.setItem\\(\"github_gist_token\"|localStorage\\.getItem\\(\"github_gist_token\"" src >/dev/null
+rg -n "https://api\\.github\\.com/gists" src >/dev/null
 echo "ok"
 
 echo

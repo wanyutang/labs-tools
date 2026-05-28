@@ -18,6 +18,10 @@ Public planning for the independent mobile tool page structure is tracked in
 That issue now contains phased small-waterfall checklists for future
 implementation passes.
 
+Current pass: Phase 1 first checklist item is complete. `src/App.jsx` is now a
+thin entry, and the existing Gist editor implementation lives under
+`src/tools/gist-editor/GistEditor.jsx`.
+
 ## Entry Checklist
 
 - `git status -sb`
@@ -43,6 +47,7 @@ implementation passes.
    `wanyutang/agent-harness-workspace` as a public feedback issue when approved.
 5. When working from public issue `#1`, pick a small unchecked checklist item,
    implement, validate, comment, and update the checklist/report state.
+6. Next likely `#1` item: add tool metadata for the Gist editor.
 
 ## Open Risks
 
