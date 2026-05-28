@@ -26,6 +26,8 @@ Mobile readability issue `#3` is in progress to increase phone-only text,
 shortcut, and icon sizing without changing desktop layout.
 Editor-only zoom issue `#4` adds `A-`/`A+` controls and two-finger pinch
 handling for the edit pane while keeping the bottom formatting bar fixed.
+PWA repair issue `#5` updates manifest installability and bumps the service
+worker cache after the installed app was reported broken.
 
 ## Entry Checklist
 
@@ -57,6 +59,8 @@ handling for the edit pane while keeping the bottom formatting bar fixed.
    the UI still feels too small or becomes crowded.
 8. Verify issue `#4` on a real phone with an opened gist: the editor text and
    line numbers should zoom together, while the bottom formatting bar stays put.
+9. Verify issue `#5` by refreshing/reinstalling the PWA on the phone after
+   deploy; stale installed app cache may require removing and re-adding once.
 
 ## Open Risks
 

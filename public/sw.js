@@ -1,5 +1,5 @@
-const CACHE_NAME = "gist-mobile-editor-v2";
-const APP_SHELL = ["manifest.webmanifest", "icon.svg"];
+const CACHE_NAME = "gist-mobile-editor-v3";
+const APP_SHELL = ["./", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"];
 const BASE_PATH = new URL(self.registration.scope).pathname;
 
 self.addEventListener("install", event => {

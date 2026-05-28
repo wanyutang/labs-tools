@@ -2,14 +2,26 @@
   "name": "Gist Mobile Editor",
   "short_name": "GistEdit",
   "description": "A mobile-friendly GitHub Gist editor with optional Gemini assistance.",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/labs-tools/",
+  "scope": "/labs-tools/",
   "display": "standalone",
   "background_color": "#1e1e1e",
   "theme_color": "#1e1e1e",
   "icons": [
     {
-      "src": "./icon.svg",
+      "src": "/labs-tools/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/labs-tools/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/labs-tools/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
