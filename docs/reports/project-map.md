@@ -44,6 +44,8 @@ updated_at: 2026-05-28
 - Reusable credentials use a shared browser-local store. Tool metadata declares
   required credentials. The optional shell can provide settings UI, while each
   standalone tool must still handle missing credentials and show its own prompt.
+- Tool metadata controls sidebar needs: required, optional, or none. The shared
+  shell must respect this instead of forcing a single layout on every tool.
 - Labs-tools product work is governed only through public-safe repo markdown
   reports by default because the repo, committed reports, and GitHub Issues are
   public. Private strategy or sensitive notes must stay outside this public repo.
