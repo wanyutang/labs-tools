@@ -27,6 +27,11 @@ updated_at: 2026-05-28
   Each tool can keep its own fit-for-purpose interface, with a separate index
   page linking back out to the individual apps rather than enforcing one shared
   workspace shell.
+- Labs-tools product work is governed first in this repo's markdown reports and
+  session logs because the repo is public and GitHub Issues are public. Public
+  labs-tools issues/milestones are created only after explicit User approval.
+  The mother harness repo is only for reusable Honeys feedback after a
+  labs-tools-local change has been validated.
 
 ## Candidate Milestones
 

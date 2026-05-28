@@ -67,8 +67,14 @@ changes app behavior, harness files, PWA assets, package metadata, or deployment
 
 ## Queue Rules
 
-When creating future work, prefer 1-3 small GitHub issues per replenish pass.
-Each issue should include:
+This repo is public, so GitHub Issues are public too. By default, keep planning,
+session state, and non-public product notes in repo markdown reports such as
+`docs/reports/current-session-handoff.md`, `docs/reports/project-map.md`, and
+`docs/reports/issue-loop-log.md`. Create GitHub Issues only when the User
+explicitly asks to publish that work publicly.
+
+When the User explicitly asks to create public issues, prefer 1-3 small GitHub
+issues per replenish pass. Each issue should include:
 
 - source evidence from this repo or reports;
 - safe scope and stop line;
@@ -77,5 +83,20 @@ Each issue should include:
 - expected files or surfaces;
 - backlink to the relevant project-map section or issue-loop-log row.
 
-Open milestone planning issues before filling a milestone with implementation
-cards. An empty milestone is not evidence of completion.
+Open milestone planning issues only after explicit User approval. An empty
+milestone is not evidence of completion.
+
+## Honeys Governance
+
+- Manage labs-tools product development, website optimization, bugs, features,
+  reports, session logs, and project-specific skill/profile adjustments in the
+  `wanyutang/labs-tools` repo.
+- Do not use `agent-harness-workspace` as the issue tracker for labs-tools
+  product work. The mother repo is only for reusable Honeys harness, profile,
+  skill, install-flow, and governance evolution.
+- If a labs-tools checkpoint reveals reusable Honeys improvements, first solve
+  and validate the labs-tools need in this repo. Then, only when the experience
+  is broadly reusable, open a feedback issue in
+  `wanyutang/agent-harness-workspace` describing the target project, problem,
+  labs-tools change, validation result, reusable lessons, and project-specific
+  parts that should not become shared defaults.

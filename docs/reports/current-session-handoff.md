@@ -27,10 +27,13 @@ GitHub Gist mobile editor.
 ## Next Best Actions
 
 1. Keep future changes scoped to one workflow surface at a time.
-2. Create a first milestone for mobile/PWA safety and token-handling hardening
-   only when issue planning is explicitly requested.
+2. Keep planning in repo markdown reports by default. Create public GitHub
+   issues or milestones only when the User explicitly asks to publish them.
 3. Continue product planning from the independent-tool index/page decision in
    `docs/reports/project-map.md`.
+4. Keep labs-tools product governance in `wanyutang/labs-tools` reports by
+   default; only send reusable Honeys process feedback to
+   `wanyutang/agent-harness-workspace` as a public feedback issue when approved.
 
 ## Open Risks
 
