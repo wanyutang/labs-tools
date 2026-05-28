@@ -16,7 +16,8 @@ Start every session with this bounded handoff:
 
 1. Run `git status -sb` and confirm local/remote are close.
 2. Read `README.md`, this file, `docs/reports/current-session-handoff.md`,
-   `docs/reports/project-map.md`, and `docs/reports/issue-loop-log.md`.
+   `docs/reports/project-map.md`, `docs/reports/issue-loop-log.md`, and
+   `references/profiles/labs-tools.md`.
 3. Check `package.json` scripts and `.github/workflows/pages.yml`.
 4. Classify work as `inspect`, `plan`, `implement`, `verify`, `replenish`, or
    `pause`.

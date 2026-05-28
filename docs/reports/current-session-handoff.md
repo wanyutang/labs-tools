@@ -8,14 +8,17 @@ updated_at: 2026-05-28
 
 ## Latest State
 
-The Labs Tools repo now has a project-local Honeys harness bootstrap in progress.
-The app itself is still the GitHub Gist mobile editor.
+The Labs Tools repo has the minimal Honeys labs-tools harness bootstrap applied.
+The mother harness is pinned in `.honeys/harness-install.json`, the active
+profile is recorded in `.honeys/profiles.json`, and the app itself is still the
+GitHub Gist mobile editor.
 
 ## Entry Checklist
 
 - `git status -sb`
 - read `AGENTS.md`
 - read `references/project-intake.md`
+- read `references/profiles/labs-tools.md`
 - read `references/vite-react-pwa.md`
 - read `docs/reports/project-map.md`
 - read `docs/reports/issue-loop-log.md`
@@ -23,9 +26,11 @@ The app itself is still the GitHub Gist mobile editor.
 
 ## Next Best Actions
 
-1. Validate and commit the initial harness skeleton.
-2. Create a first milestone for mobile/PWA safety and token-handling hardening.
-3. Open only 1-3 bounded GitHub issues after milestone scope is written.
+1. Keep future changes scoped to one workflow surface at a time.
+2. Create a first milestone for mobile/PWA safety and token-handling hardening
+   only when issue planning is explicitly requested.
+3. Continue product planning from the independent-tool index/page decision in
+   `docs/reports/project-map.md`.
 
 ## Open Risks
 

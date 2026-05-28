@@ -23,6 +23,10 @@ updated_at: 2026-05-28
   default.
 - New-session context should be read from repo-native docs, not reconstructed
   from chat history.
+- Labs Tools is a collection of independent mobile-first single-page tools.
+  Each tool can keep its own fit-for-purpose interface, with a separate index
+  page linking back out to the individual apps rather than enforcing one shared
+  workspace shell.
 
 ## Candidate Milestones
 

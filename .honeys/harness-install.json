@@ -1,0 +1,10 @@
+{
+  "repo": "https://github.com/wanyutang/agent-harness-workspace.git",
+  "install_dir": "/Users/wanyutang/.honeys/mother-harness",
+  "ref": "main",
+  "commit": "dce6750fd8d3f6cb5b839dbaa3aa57ed40071458",
+  "channel": "stable",
+  "previous_ref": "",
+  "previous_commit": "",
+  "rollback_ref": ""
+}

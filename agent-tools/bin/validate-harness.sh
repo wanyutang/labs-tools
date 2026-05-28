@@ -7,7 +7,9 @@ required_files=(
   "CLAUDE.md"
   ".github/copilot-instructions.md"
   ".honeys/profiles.json"
+  ".honeys/harness-install.json"
   "references/project-intake.md"
+  "references/profiles/labs-tools.md"
   "references/vite-react-pwa.md"
   "docs/reports/current-session-handoff.md"
   "docs/reports/project-map.md"
@@ -26,6 +28,7 @@ echo
 echo "## JSON validation"
 python3 -m json.tool package.json >/dev/null
 python3 -m json.tool .honeys/profiles.json >/dev/null
+python3 -m json.tool .honeys/harness-install.json >/dev/null
 python3 -m json.tool public/manifest.webmanifest >/dev/null
 echo "ok"
 

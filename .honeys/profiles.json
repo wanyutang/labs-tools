@@ -1,10 +1,14 @@
 {
   "project": "labs-tools",
-  "active_profiles": [
-    "vite-react-pwa"
+  "profiles": [
+    "labs-tools"
   ],
+  "active_profiles": [
+    "labs-tools"
+  ],
+  "source": "https://github.com/wanyutang/agent-harness-workspace/tree/main/profiles/labs-tools",
   "notes": [
-    "This repo uses a project-local harness profile because the upstream harness generator does not yet ship a reusable Vite/React/PWA profile.",
-    "Keep profile guidance in references/vite-react-pwa.md until it is promoted into the shared harness system."
+    "Honeys mother harness is pinned in .honeys/harness-install.json.",
+    "references/vite-react-pwa.md remains as local project context; references/profiles/labs-tools.md is the active shared profile."
   ]
 }
